@@ -19,7 +19,11 @@ class LoginUseCase:
     async def execute(self, email: str, password: str) -> tuple[str, int, str]:
         async with self._uow_factory() as uow:
             user = await uow.users.get_by_email(email)
-            if user and self._password_service.verify(password, user.password_hash):
+            if (
+                user
+                and user.is_active
+                and self._password_service.verify(password, user.password_hash)
+            ):
                 assert user.id is not None
                 token = self._jwt_service.create_access_token(user_id=user.id, role="user")
                 return token, user.id, "user"

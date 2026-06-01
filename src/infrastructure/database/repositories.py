@@ -140,12 +140,15 @@ class SqlAlchemyAccountRepository:
         return self._to_domain(model)
 
     async def add_balance(self, account_id: int, amount: Decimal) -> Account:
-        result = await self._session.execute(
-            select(AccountModel).where(AccountModel.id == account_id)
+        stmt = (
+            update(AccountModel)
+            .where(AccountModel.id == account_id)
+            .values(balance=AccountModel.balance + amount)
+            .returning(AccountModel)
         )
+        result = await self._session.execute(stmt)
         model = result.scalar_one_or_none()
         if model:
-            model.balance += amount
             await self._session.flush()
             return self._to_domain(model)
         raise ValueError(f"Account {account_id} not found")

@@ -1,44 +1,30 @@
 # Python
 __pycache__/
 *.py[cod]
-*$py.class
-*.so
 *.egg-info/
 dist/
 build/
-*.egg
-.venv/
-venv/
-env/
+
+# Environment
+.env
+
+# Testing
+test.db
+.pytest_cache/
+htmlcov/
+.coverage
+.coverage.*
 
 # IDE
-.vscode/
 .idea/
+.vscode/
 *.swp
 *.swo
 *~
 
-# Environment
-.env
-!.env.example
-
-# Database
-*.db
-*.sqlite3
+# Ruff
+.ruff_cache/
 
 # OS
 .DS_Store
 Thumbs.db
-
-# Docker
-.docker/
-
-# Coverage
-htmlcov/
-.coverage
-.coverage.*
-coverage.xml
-
-# pytest
-.cache/
-.pytest_cache/

@@ -24,6 +24,18 @@ from src.infrastructure.database.connection import create_engine, create_session
 from src.infrastructure.database.unit_of_work import SqlAlchemyUnitOfWork
 
 
+class _SecretKeyProvider:
+    """Adapter that exposes only the secret key from config, preserving Clean Architecture
+    boundaries by keeping infrastructure types out of the application layer."""
+
+    def __init__(self, secret_key: str) -> None:
+        self._secret_key = secret_key
+
+    @property
+    def secret_key(self) -> str:
+        return self._secret_key
+
+
 class Container:
     def __init__(self, config: AppConfig):
         self._config = config
@@ -88,4 +100,5 @@ class Container:
         return GetUserAccountsAdminUseCase(self.uow_factory)
 
     def process_payment_use_case(self) -> ProcessPaymentWebhookUseCase:
-        return ProcessPaymentWebhookUseCase(self.uow_factory, self._config)
+        key_provider = _SecretKeyProvider(self._config.secret_key)
+        return ProcessPaymentWebhookUseCase(self.uow_factory, key_provider)

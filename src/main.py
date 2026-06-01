@@ -1,4 +1,4 @@
-from sanic import Sanic
+from sanic import Sanic, response
 
 from src.container import Container
 from src.infrastructure.config import AppConfig
@@ -21,7 +21,7 @@ def create_app(config: AppConfig | None = None) -> Sanic:
     app.ctx.container = container
     app.ctx.config = config
 
-    auth_middleware = setup_middleware(app, config.jwt_secret, config.jwt_algorithm)
+    auth_middleware = setup_middleware(app, container.jwt_service)
 
     setup_auth_routes(
         auth_bp,
@@ -62,7 +62,7 @@ def create_app(config: AppConfig | None = None) -> Sanic:
 
     @app.get("/health")
     async def health(_request):
-        return {"status": "ok"}
+        return response.json({"status": "ok"})
 
     return app
 

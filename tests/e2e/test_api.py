@@ -152,3 +152,83 @@ async def test_admin_creates_user(test_client):
     )
     assert create_resp.status == 201
     assert create_resp.json["email"] == "newuser@test.com"
+
+
+@pytest.mark.asyncio
+async def test_admin_me(test_client):
+    _, login_resp = await test_client.post(
+        "/auth/login",
+        json={"email": "admin@example.com", "password": "admin123"},
+    )
+    token = login_resp.json["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    _, resp = await test_client.get("/auth/admins/me", headers=headers)
+    assert resp.status == 200
+    assert resp.json["email"] == "admin@example.com"
+
+
+@pytest.mark.asyncio
+async def test_admin_updates_user(test_client):
+    _, login_resp = await test_client.post(
+        "/auth/login",
+        json={"email": "admin@example.com", "password": "admin123"},
+    )
+    token = login_resp.json["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    _, resp = await test_client.put(
+        "/users/1",
+        headers=headers,
+        json={"full_name": "Updated Name"},
+    )
+    assert resp.status == 200
+    assert resp.json["full_name"] == "Updated Name"
+
+
+@pytest.mark.asyncio
+async def test_admin_user_accounts(test_client):
+    _, login_resp = await test_client.post(
+        "/auth/login",
+        json={"email": "admin@example.com", "password": "admin123"},
+    )
+    token = login_resp.json["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    _, resp = await test_client.get("/users/1/accounts", headers=headers)
+    assert resp.status == 200
+    assert len(resp.json) >= 1
+
+
+@pytest.mark.asyncio
+async def test_user_me_accounts(test_client):
+    _, login_resp = await test_client.post(
+        "/auth/login",
+        json={"email": "user@example.com", "password": "user123"},
+    )
+    token = login_resp.json["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    _, resp = await test_client.get("/users/me/accounts", headers=headers)
+    assert resp.status == 200
+    assert len(resp.json) >= 1
+
+
+@pytest.mark.asyncio
+async def test_user_me_payments(test_client):
+    _, login_resp = await test_client.post(
+        "/auth/login",
+        json={"email": "user@example.com", "password": "user123"},
+    )
+    token = login_resp.json["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    _, resp = await test_client.get("/users/me/payments", headers=headers)
+    assert resp.status == 200
+
+
+@pytest.mark.asyncio
+async def test_health_endpoint(test_client):
+    _, resp = await test_client.get("/health")
+    assert resp.status == 200
+    assert resp.json["status"] == "ok"

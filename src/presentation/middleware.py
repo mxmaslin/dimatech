@@ -1,16 +1,15 @@
 from typing import Optional
 
-import jwt
 from sanic import Sanic
 from sanic.request import Request
 
 from src.application.errors import AuthenticationError, AuthorizationError
+from src.domain.interfaces import JwtService
 
 
 class AuthMiddleware:
-    def __init__(self, jwt_secret: str, jwt_algorithm: str):
-        self._jwt_secret = jwt_secret
-        self._jwt_algorithm = jwt_algorithm
+    def __init__(self, jwt_service: JwtService):
+        self._jwt_service = jwt_service
 
     def _get_token(self, request: Request) -> Optional[str]:
         auth_header = request.headers.get("Authorization", "")
@@ -18,19 +17,11 @@ class AuthMiddleware:
             return auth_header[7:]
         return None
 
-    def _decode(self, token: str) -> dict:
-        try:
-            return jwt.decode(token, self._jwt_secret, algorithms=[self._jwt_algorithm])
-        except jwt.ExpiredSignatureError:
-            raise AuthenticationError("Token expired")
-        except jwt.InvalidTokenError:
-            raise AuthenticationError("Invalid token")
-
     def require_auth(self, request: Request) -> dict:
         token = self._get_token(request)
         if not token:
             raise AuthenticationError("Missing authorization header")
-        payload = self._decode(token)
+        payload = self._jwt_service.decode_token(token)
         request.ctx.user_id = payload.get("user_id")
         request.ctx.role = payload.get("role")
         return payload
@@ -48,6 +39,6 @@ class AuthMiddleware:
         return payload
 
 
-def setup_middleware(app: Sanic, jwt_secret: str, jwt_algorithm: str) -> AuthMiddleware:
-    auth_middleware = AuthMiddleware(jwt_secret, jwt_algorithm)
+def setup_middleware(app: Sanic, jwt_service: JwtService) -> AuthMiddleware:
+    auth_middleware = AuthMiddleware(jwt_service)
     return auth_middleware

@@ -3,6 +3,7 @@ from typing import Any
 
 import jwt
 
+from src.application.errors import AuthenticationError
 from src.infrastructure.config import AppConfig
 
 
@@ -21,8 +22,13 @@ class JwtService:
         return jwt.encode(payload, self._config.jwt_secret, algorithm=self._config.jwt_algorithm)
 
     def decode_token(self, token: str) -> dict[str, Any]:
-        return jwt.decode(
-            token,
-            self._config.jwt_secret,
-            algorithms=[self._config.jwt_algorithm],
-        )
+        try:
+            return jwt.decode(
+                token,
+                self._config.jwt_secret,
+                algorithms=[self._config.jwt_algorithm],
+            )
+        except jwt.ExpiredSignatureError:
+            raise AuthenticationError("Token expired")
+        except jwt.InvalidTokenError:
+            raise AuthenticationError("Invalid token")
