@@ -31,7 +31,7 @@ def test_config():
     return AppConfig(
         database_url=TEST_DATABASE_URL,
         secret_key="gfdmhghif38yrf9ew0jkf32",
-        jwt_secret="test-jwt-secret",
+        jwt_secret="test-jwt-secret-key-that-is-32-bytes!",
         jwt_algorithm="HS256",
         jwt_expiry_minutes=60,
         debug=False,
@@ -45,7 +45,7 @@ async def db_engine():
         await conn.run_sync(Base.metadata.create_all)
 
     # Seed test data
-    from src.infrastructure.database.models import AdminModel, UserModel, AccountModel
+    from src.infrastructure.database.models import AccountModel, AdminModel, UserModel
 
     async with async_sessionmaker(engine, class_=AsyncSession)() as session:
         user_pwd = bcrypt.hashpw(b"user123", bcrypt.gensalt()).decode()
@@ -79,9 +79,7 @@ async def db_engine():
 
 @pytest_asyncio.fixture
 async def db_session(db_engine) -> AsyncGenerator[AsyncSession, None]:
-    session_factory = async_sessionmaker(
-        db_engine, class_=AsyncSession, expire_on_commit=False
-    )
+    session_factory = async_sessionmaker(db_engine, class_=AsyncSession, expire_on_commit=False)
     async with session_factory() as session:
         yield session
         await session.rollback()
@@ -89,9 +87,7 @@ async def db_session(db_engine) -> AsyncGenerator[AsyncSession, None]:
 
 @pytest_asyncio.fixture
 async def uow_factory(db_engine):
-    session_factory = async_sessionmaker(
-        db_engine, class_=AsyncSession, expire_on_commit=False
-    )
+    session_factory = async_sessionmaker(db_engine, class_=AsyncSession, expire_on_commit=False)
 
     class TestUnitOfWork(SqlAlchemyUnitOfWork):
         pass

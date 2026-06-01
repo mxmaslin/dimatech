@@ -1,3 +1,5 @@
+from collections.abc import Callable
+
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from src.application.use_cases.admin import (
@@ -14,6 +16,7 @@ from src.application.use_cases.user import (
     GetUserPaymentsUseCase,
     GetUserUseCase,
 )
+from src.domain.interfaces import UnitOfWork
 from src.infrastructure.auth.jwt_service import JwtService
 from src.infrastructure.auth.password_service import PasswordService
 from src.infrastructure.config import AppConfig
@@ -25,8 +28,8 @@ class Container:
     def __init__(self, config: AppConfig):
         self._config = config
         self._engine = create_engine(config)
-        self._session_factory: async_sessionmaker[AsyncSession] = (
-            create_session_factory(self._engine)
+        self._session_factory: async_sessionmaker[AsyncSession] = create_session_factory(
+            self._engine
         )
         self._password_service = PasswordService()
         self._jwt_service = JwtService(config)
@@ -48,11 +51,11 @@ class Container:
         return self._jwt_service
 
     @property
-    def uow_factory(self) -> type[SqlAlchemyUnitOfWork]:
+    def uow_factory(self) -> Callable[[], UnitOfWork]:
         def _factory() -> SqlAlchemyUnitOfWork:
             return SqlAlchemyUnitOfWork(self._session_factory)
 
-        return _factory  # type: ignore
+        return _factory
 
     def login_use_case(self) -> LoginUseCase:
         return LoginUseCase(self.uow_factory, self._password_service, self._jwt_service)

@@ -68,7 +68,7 @@ The API will be available at `http://localhost:8000`.
 | Method | Endpoint       | Auth  | Description          |
 |--------|----------------|-------|----------------------|
 | POST   | /auth/login    | —     | Login by email/password |
-| GET    | /admins/me     | admin | Get admin profile    |
+| GET    | /auth/admins/me | admin | Get admin profile    |
 
 ### User endpoints
 

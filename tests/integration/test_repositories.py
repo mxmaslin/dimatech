@@ -1,15 +1,14 @@
-import pytest
 from decimal import Decimal
 
-from src.domain.entities import User, Account, Payment
+import pytest
+
+from src.domain.entities import Account, Payment, User
 from src.domain.value_objects import Email
 from src.infrastructure.database.repositories import (
-    SqlAlchemyUserRepository,
     SqlAlchemyAccountRepository,
     SqlAlchemyPaymentRepository,
-    SqlAlchemyAdminRepository,
+    SqlAlchemyUserRepository,
 )
-from src.infrastructure.database.models import UserModel, AccountModel, PaymentModel
 
 
 @pytest.mark.asyncio
@@ -98,9 +97,7 @@ async def test_payment_repository(db_session):
             full_name="Pay User",
         )
     )
-    account = await acc_repo.create(
-        Account(user_id=user.id, balance=Decimal("0.00"))
-    )
+    account = await acc_repo.create(Account(user_id=user.id, balance=Decimal("0.00")))
 
     payment = Payment(
         transaction_id="tx-unique-123",
@@ -114,6 +111,39 @@ async def test_payment_repository(db_session):
     fetched = await pay_repo.get_by_transaction_id("tx-unique-123")
     assert fetched is not None
     assert fetched.amount == Decimal("100.00")
+
+    payments = await pay_repo.get_by_user_id(user.id)
+    assert len(payments) == 1
+
+
+@pytest.mark.asyncio
+async def test_payment_create_if_not_exists(db_session):
+    user_repo = SqlAlchemyUserRepository(db_session)
+    acc_repo = SqlAlchemyAccountRepository(db_session)
+    pay_repo = SqlAlchemyPaymentRepository(db_session)
+
+    user = await user_repo.create(
+        User(
+            email=Email("idempotent-repo@test.com"),
+            password_hash="h",
+            full_name="Idempotent User",
+        )
+    )
+    account = await acc_repo.create(Account(user_id=user.id, balance=Decimal("0.00")))
+
+    payment = Payment(
+        transaction_id="tx-idempotent-456",
+        user_id=user.id,
+        account_id=account.id,
+        amount=Decimal("25.00"),
+    )
+    created, was_created = await pay_repo.create_if_not_exists(payment)
+    assert was_created is True
+    assert created.transaction_id == "tx-idempotent-456"
+
+    duplicate, was_created = await pay_repo.create_if_not_exists(payment)
+    assert was_created is False
+    assert duplicate.transaction_id == "tx-idempotent-456"
 
     payments = await pay_repo.get_by_user_id(user.id)
     assert len(payments) == 1

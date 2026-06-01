@@ -1,7 +1,7 @@
 from datetime import datetime
 from decimal import Decimal
 
-from src.domain.entities import Account, Admin, Payment, User
+from src.domain.entities import Account, Payment, User
 from src.domain.value_objects import Email
 
 

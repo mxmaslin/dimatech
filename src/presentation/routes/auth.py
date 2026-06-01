@@ -2,7 +2,7 @@ from sanic import Blueprint, response
 from sanic.request import Request
 
 from src.application.dto import LoginRequest
-from src.application.use_cases.auth import LoginUseCase, GetAdminUseCase
+from src.application.use_cases.auth import GetAdminUseCase, LoginUseCase
 from src.presentation.middleware import AuthMiddleware
 
 auth_bp = Blueprint("auth", url_prefix="/auth")
@@ -17,9 +17,7 @@ def setup_auth_routes(
     @bp.post("/login")
     async def login(request: Request):
         body = LoginRequest(**request.json)
-        token, user_id, role = await login_use_case.execute(
-            body.email, body.password
-        )
+        token, user_id, role = await login_use_case.execute(body.email, body.password)
         return response.json(
             {
                 "access_token": token,

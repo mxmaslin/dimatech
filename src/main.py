@@ -7,7 +7,7 @@ from src.presentation.middleware import setup_middleware
 from src.presentation.routes.admin import admin_bp, setup_admin_routes
 from src.presentation.routes.auth import auth_bp, setup_auth_routes
 from src.presentation.routes.payment import payment_bp, setup_payment_routes
-from src.presentation.routes.user import user_bp, setup_user_routes
+from src.presentation.routes.user import setup_user_routes, user_bp
 
 
 def create_app(config: AppConfig | None = None) -> Sanic:
@@ -21,9 +21,7 @@ def create_app(config: AppConfig | None = None) -> Sanic:
     app.ctx.container = container
     app.ctx.config = config
 
-    auth_middleware = setup_middleware(
-        app, config.jwt_secret, config.jwt_algorithm
-    )
+    auth_middleware = setup_middleware(app, config.jwt_secret, config.jwt_algorithm)
 
     setup_auth_routes(
         auth_bp,

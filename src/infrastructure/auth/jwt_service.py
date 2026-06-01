@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 import jwt
@@ -11,16 +11,14 @@ class JwtService:
         self._config = config
 
     def create_access_token(self, user_id: int, role: str) -> str:
+        now = datetime.now(timezone.utc)
         payload: dict[str, Any] = {
             "user_id": user_id,
             "role": role,
-            "exp": datetime.utcnow()
-            + timedelta(minutes=self._config.jwt_expiry_minutes),
-            "iat": datetime.utcnow(),
+            "exp": now + timedelta(minutes=self._config.jwt_expiry_minutes),
+            "iat": now,
         }
-        return jwt.encode(
-            payload, self._config.jwt_secret, algorithm=self._config.jwt_algorithm
-        )
+        return jwt.encode(payload, self._config.jwt_secret, algorithm=self._config.jwt_algorithm)
 
     def decode_token(self, token: str) -> dict[str, Any]:
         return jwt.decode(

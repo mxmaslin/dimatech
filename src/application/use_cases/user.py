@@ -1,10 +1,12 @@
+from collections.abc import Callable
+
 from src.application.dto import AccountResponse, PaymentResponse, UserResponse
 from src.application.errors import NotFoundError
 from src.domain.interfaces import UnitOfWork
 
 
 class GetUserUseCase:
-    def __init__(self, uow_factory: type[UnitOfWork]):
+    def __init__(self, uow_factory: Callable[[], UnitOfWork]):
         self._uow_factory = uow_factory
 
     async def execute(self, user_id: int) -> UserResponse:
@@ -12,15 +14,16 @@ class GetUserUseCase:
             user = await uow.users.get_by_id(user_id)
             if not user:
                 raise NotFoundError("User")
+            assert user.id is not None
             return UserResponse(
-                id=user.id,  # type: ignore
+                id=user.id,
                 email=str(user.email),
                 full_name=user.full_name,
             )
 
 
 class GetUserAccountsUseCase:
-    def __init__(self, uow_factory: type[UnitOfWork]):
+    def __init__(self, uow_factory: Callable[[], UnitOfWork]):
         self._uow_factory = uow_factory
 
     async def execute(self, user_id: int) -> list[AccountResponse]:
@@ -28,7 +31,7 @@ class GetUserAccountsUseCase:
             accounts = await uow.accounts.get_by_user_id(user_id)
             return [
                 AccountResponse(
-                    id=acc.id,  # type: ignore
+                    id=acc.id,  # type: ignore[arg-type]
                     user_id=acc.user_id,
                     balance=acc.balance,
                 )
@@ -37,7 +40,7 @@ class GetUserAccountsUseCase:
 
 
 class GetUserPaymentsUseCase:
-    def __init__(self, uow_factory: type[UnitOfWork]):
+    def __init__(self, uow_factory: Callable[[], UnitOfWork]):
         self._uow_factory = uow_factory
 
     async def execute(self, user_id: int) -> list[PaymentResponse]:

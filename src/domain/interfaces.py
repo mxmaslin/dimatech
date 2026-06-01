@@ -1,8 +1,29 @@
 from abc import ABC, abstractmethod
 from decimal import Decimal
-from typing import Optional, Protocol
+from typing import Any, Optional, Protocol
 
 from src.domain.entities import Account, Admin, Payment, User
+
+
+class PasswordService(Protocol):
+    """Domain protocol for password hashing and verification."""
+
+    def hash(self, plain_password: str) -> str: ...
+    def verify(self, plain_password: str, hashed: str) -> bool: ...
+
+
+class JwtService(Protocol):
+    """Domain protocol for JWT token creation and decoding."""
+
+    def create_access_token(self, user_id: int, role: str) -> str: ...
+    def decode_token(self, token: str) -> dict[str, Any]: ...
+
+
+class SecretKeyProvider(Protocol):
+    """Domain protocol for accessing the secret key used in signatures."""
+
+    @property
+    def secret_key(self) -> str: ...
 
 
 class UserRepository(Protocol):
@@ -41,6 +62,8 @@ class PaymentRepository(Protocol):
     async def get_by_transaction_id(self, transaction_id: str) -> Optional[Payment]: ...
 
     async def create(self, payment: Payment) -> Payment: ...
+
+    async def create_if_not_exists(self, payment: Payment) -> tuple[Payment, bool]: ...
 
     async def get_by_user_id(self, user_id: int) -> list[Payment]: ...
 

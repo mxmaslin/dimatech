@@ -1,27 +1,26 @@
+from collections.abc import Callable
+
 from src.application.dto import AccountResponse, UserResponse
-from src.application.errors import NotFoundError
+from src.application.errors import DuplicateError, NotFoundError
 from src.domain.entities import User
-from src.domain.interfaces import UnitOfWork
+from src.domain.interfaces import PasswordService, UnitOfWork
 from src.domain.value_objects import Email
-from src.infrastructure.auth.password_service import PasswordService
 
 
 class CreateUserUseCase:
     def __init__(
         self,
-        uow_factory: type[UnitOfWork],
+        uow_factory: Callable[[], UnitOfWork],
         password_service: PasswordService,
     ):
         self._uow_factory = uow_factory
         self._password_service = password_service
 
-    async def execute(
-        self, email: str, password: str, full_name: str
-    ) -> UserResponse:
+    async def execute(self, email: str, password: str, full_name: str) -> UserResponse:
         async with self._uow_factory() as uow:
             existing = await uow.users.get_by_email(email)
             if existing:
-                raise NotFoundError("User with this email already exists")
+                raise DuplicateError("User with this email already exists")
 
             password_hash = self._password_service.hash(password)
             user = User(
@@ -30,8 +29,9 @@ class CreateUserUseCase:
                 full_name=full_name,
             )
             user = await uow.users.create(user)
+            assert user.id is not None
             return UserResponse(
-                id=user.id,  # type: ignore
+                id=user.id,
                 email=str(user.email),
                 full_name=user.full_name,
             )
@@ -40,7 +40,7 @@ class CreateUserUseCase:
 class UpdateUserUseCase:
     def __init__(
         self,
-        uow_factory: type[UnitOfWork],
+        uow_factory: Callable[[], UnitOfWork],
         password_service: PasswordService,
     ):
         self._uow_factory = uow_factory
@@ -66,15 +66,16 @@ class UpdateUserUseCase:
                 user.full_name = full_name
 
             user = await uow.users.update(user)
+            assert user.id is not None
             return UserResponse(
-                id=user.id,  # type: ignore
+                id=user.id,
                 email=str(user.email),
                 full_name=user.full_name,
             )
 
 
 class DeleteUserUseCase:
-    def __init__(self, uow_factory: type[UnitOfWork]):
+    def __init__(self, uow_factory: Callable[[], UnitOfWork]):
         self._uow_factory = uow_factory
 
     async def execute(self, user_id: int) -> None:
@@ -86,7 +87,7 @@ class DeleteUserUseCase:
 
 
 class ListUsersUseCase:
-    def __init__(self, uow_factory: type[UnitOfWork]):
+    def __init__(self, uow_factory: Callable[[], UnitOfWork]):
         self._uow_factory = uow_factory
 
     async def execute(self) -> list[UserResponse]:
@@ -94,7 +95,7 @@ class ListUsersUseCase:
             users = await uow.users.list_all()
             return [
                 UserResponse(
-                    id=u.id,  # type: ignore
+                    id=u.id,  # type: ignore[arg-type]
                     email=str(u.email),
                     full_name=u.full_name,
                 )
@@ -103,7 +104,7 @@ class ListUsersUseCase:
 
 
 class GetUserAccountsAdminUseCase:
-    def __init__(self, uow_factory: type[UnitOfWork]):
+    def __init__(self, uow_factory: Callable[[], UnitOfWork]):
         self._uow_factory = uow_factory
 
     async def execute(self, user_id: int) -> list[AccountResponse]:
@@ -114,7 +115,7 @@ class GetUserAccountsAdminUseCase:
             accounts = await uow.accounts.get_by_user_id(user_id)
             return [
                 AccountResponse(
-                    id=acc.id,  # type: ignore
+                    id=acc.id,  # type: ignore[arg-type]
                     user_id=acc.user_id,
                     balance=acc.balance,
                 )

@@ -20,9 +20,7 @@ class AuthMiddleware:
 
     def _decode(self, token: str) -> dict:
         try:
-            return jwt.decode(
-                token, self._jwt_secret, algorithms=[self._jwt_algorithm]
-            )
+            return jwt.decode(token, self._jwt_secret, algorithms=[self._jwt_algorithm])
         except jwt.ExpiredSignatureError:
             raise AuthenticationError("Token expired")
         except jwt.InvalidTokenError:
@@ -35,6 +33,12 @@ class AuthMiddleware:
         payload = self._decode(token)
         request.ctx.user_id = payload.get("user_id")
         request.ctx.role = payload.get("role")
+        return payload
+
+    def require_user(self, request: Request) -> dict:
+        payload = self.require_auth(request)
+        if payload.get("role") != "user":
+            raise AuthorizationError("User access required")
         return payload
 
     def require_admin(self, request: Request) -> dict:

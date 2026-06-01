@@ -41,19 +41,22 @@ def setup_error_handlers(app: Sanic) -> None:
         )
 
     @app.exception(SignatureVerificationError)
-    async def handle_signature_error(
-        _request: Request, exception: SignatureVerificationError
-    ):
+    async def handle_signature_error(_request: Request, exception: SignatureVerificationError):
         return response.json(
             {"error": "invalid_signature", "detail": exception.message},
             status=400,
         )
 
     @app.exception(ApplicationError)
-    async def handle_application_error(
-        _request: Request, exception: ApplicationError
-    ):
+    async def handle_application_error(_request: Request, exception: ApplicationError):
         return response.json(
             {"error": "application_error", "detail": exception.message},
             status=exception.status_code,
+        )
+
+    @app.exception(ValueError)
+    async def handle_value_error(_request: Request, exception: ValueError):
+        return response.json(
+            {"error": "validation_error", "detail": str(exception)},
+            status=400,
         )

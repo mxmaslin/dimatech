@@ -46,7 +46,7 @@ def upgrade() -> None:
         op.Column(
             "user_id",
             op.Integer(),
-            op.ForeignKey("users.id"),
+            op.ForeignKey("users.id", ondelete="CASCADE"),
             nullable=False,
         ),
         op.Column(
@@ -68,13 +68,13 @@ def upgrade() -> None:
         op.Column(
             "user_id",
             op.Integer(),
-            op.ForeignKey("users.id"),
+            op.ForeignKey("users.id", ondelete="CASCADE"),
             nullable=False,
         ),
         op.Column(
             "account_id",
             op.Integer(),
-            op.ForeignKey("accounts.id"),
+            op.ForeignKey("accounts.id", ondelete="CASCADE"),
             nullable=False,
         ),
         op.Column("amount", op.DECIMAL(12, 2), nullable=False),

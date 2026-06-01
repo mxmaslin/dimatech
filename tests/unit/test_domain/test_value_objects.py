@@ -1,5 +1,4 @@
 import pytest
-from decimal import Decimal
 
 from src.domain.value_objects import Email, Password
 

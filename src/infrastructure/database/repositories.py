@@ -1,7 +1,9 @@
 from decimal import Decimal
 from typing import Optional
 
-from sqlalchemy import select, update, delete
+from sqlalchemy import delete, select, update
+from sqlalchemy.dialects.postgresql import insert as pg_insert
+from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.domain.entities import Account, Admin, Payment, User
@@ -19,16 +21,12 @@ class SqlAlchemyUserRepository:
         self._session = session
 
     async def get_by_id(self, user_id: int) -> Optional[User]:
-        result = await self._session.execute(
-            select(UserModel).where(UserModel.id == user_id)
-        )
+        result = await self._session.execute(select(UserModel).where(UserModel.id == user_id))
         model = result.scalar_one_or_none()
         return self._to_domain(model) if model else None
 
     async def get_by_email(self, email: str) -> Optional[User]:
-        result = await self._session.execute(
-            select(UserModel).where(UserModel.email == email)
-        )
+        result = await self._session.execute(select(UserModel).where(UserModel.email == email))
         model = result.scalar_one_or_none()
         return self._to_domain(model) if model else None
 
@@ -84,16 +82,12 @@ class SqlAlchemyAdminRepository:
         self._session = session
 
     async def get_by_id(self, admin_id: int) -> Optional[Admin]:
-        result = await self._session.execute(
-            select(AdminModel).where(AdminModel.id == admin_id)
-        )
+        result = await self._session.execute(select(AdminModel).where(AdminModel.id == admin_id))
         model = result.scalar_one_or_none()
         return self._to_domain(model) if model else None
 
     async def get_by_email(self, email: str) -> Optional[Admin]:
-        result = await self._session.execute(
-            select(AdminModel).where(AdminModel.email == email)
-        )
+        result = await self._session.execute(select(AdminModel).where(AdminModel.email == email))
         model = result.scalar_one_or_none()
         return self._to_domain(model) if model else None
 
@@ -172,9 +166,7 @@ class SqlAlchemyPaymentRepository:
 
     async def get_by_transaction_id(self, transaction_id: str) -> Optional[Payment]:
         result = await self._session.execute(
-            select(PaymentModel).where(
-                PaymentModel.transaction_id == transaction_id
-            )
+            select(PaymentModel).where(PaymentModel.transaction_id == transaction_id)
         )
         model = result.scalar_one_or_none()
         return self._to_domain(model) if model else None
@@ -189,6 +181,38 @@ class SqlAlchemyPaymentRepository:
         self._session.add(model)
         await self._session.flush()
         return self._to_domain(model)
+
+    async def create_if_not_exists(self, payment: Payment) -> tuple[Payment, bool]:
+        values = {
+            "transaction_id": payment.transaction_id,
+            "user_id": payment.user_id,
+            "account_id": payment.account_id,
+            "amount": payment.amount,
+        }
+        dialect_name = self._session.get_bind().dialect.name
+        if dialect_name == "postgresql":
+            insert_fn = pg_insert
+        elif dialect_name == "sqlite":
+            insert_fn = sqlite_insert
+        else:
+            raise RuntimeError(f"Unsupported database dialect: {dialect_name}")
+
+        stmt = (
+            insert_fn(PaymentModel)
+            .values(**values)
+            .on_conflict_do_nothing(index_elements=["transaction_id"])
+            .returning(PaymentModel)
+        )
+        result = await self._session.execute(stmt)
+        model = result.scalar_one_or_none()
+        if model:
+            await self._session.flush()
+            return self._to_domain(model), True
+
+        existing = await self.get_by_transaction_id(payment.transaction_id)
+        if existing is None:
+            raise RuntimeError(f"Payment {payment.transaction_id} conflict without existing row")
+        return existing, False
 
     async def get_by_user_id(self, user_id: int) -> list[Payment]:
         result = await self._session.execute(
