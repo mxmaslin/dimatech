@@ -1,9 +1,8 @@
 from datetime import datetime, timedelta, timezone
-from typing import Any
+from typing import Any, Optional
 
 import jwt
 
-from src.application.errors import AuthenticationError
 from src.infrastructure.config import AppConfig
 
 
@@ -21,7 +20,12 @@ class JwtService:
         }
         return jwt.encode(payload, self._config.jwt_secret, algorithm=self._config.jwt_algorithm)
 
-    def decode_token(self, token: str) -> dict[str, Any]:
+    def decode_token(self, token: str) -> Optional[dict[str, Any]]:
+        """Decode and validate a JWT token.
+
+        Returns the decoded payload on success, or None on any validation failure.
+        The caller is responsible for raising appropriate errors.
+        """
         try:
             return jwt.decode(
                 token,
@@ -29,6 +33,6 @@ class JwtService:
                 algorithms=[self._config.jwt_algorithm],
             )
         except jwt.ExpiredSignatureError:
-            raise AuthenticationError("Token expired")
+            return None
         except jwt.InvalidTokenError:
-            raise AuthenticationError("Invalid token")
+            return None

@@ -29,7 +29,8 @@ class CreateUserUseCase:
                 full_name=full_name,
             )
             user = await uow.users.create(user)
-            assert user.id is not None
+            if user.id is None:
+                raise RuntimeError("CreateUserUseCase: user.id is None after create")
             return UserResponse(
                 id=user.id,
                 email=str(user.email),
@@ -58,7 +59,10 @@ class UpdateUserUseCase:
             if not user:
                 raise NotFoundError("User")
 
-            if email:
+            if email and email != str(user.email):
+                existing = await uow.users.get_by_email(email)
+                if existing:
+                    raise DuplicateError("User with this email already exists")
                 user.email = Email(email)
             if password:
                 user.password_hash = self._password_service.hash(password)
@@ -66,7 +70,8 @@ class UpdateUserUseCase:
                 user.full_name = full_name
 
             user = await uow.users.update(user)
-            assert user.id is not None
+            if user.id is None:
+                raise RuntimeError("UpdateUserUseCase: user.id is None after update")
             return UserResponse(
                 id=user.id,
                 email=str(user.email),

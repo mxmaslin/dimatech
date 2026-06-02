@@ -19,21 +19,10 @@ from src.application.use_cases.user import (
 from src.domain.interfaces import UnitOfWork
 from src.infrastructure.auth.jwt_service import JwtService
 from src.infrastructure.auth.password_service import PasswordService
+from src.infrastructure.auth.secret_key_provider import SecretKeyProvider
 from src.infrastructure.config import AppConfig
 from src.infrastructure.database.connection import create_engine, create_session_factory
 from src.infrastructure.database.unit_of_work import SqlAlchemyUnitOfWork
-
-
-class _SecretKeyProvider:
-    """Adapter that exposes only the secret key from config, preserving Clean Architecture
-    boundaries by keeping infrastructure types out of the application layer."""
-
-    def __init__(self, secret_key: str) -> None:
-        self._secret_key = secret_key
-
-    @property
-    def secret_key(self) -> str:
-        return self._secret_key
 
 
 class Container:
@@ -100,5 +89,5 @@ class Container:
         return GetUserAccountsAdminUseCase(self.uow_factory)
 
     def process_payment_use_case(self) -> ProcessPaymentWebhookUseCase:
-        key_provider = _SecretKeyProvider(self._config.secret_key)
+        key_provider = SecretKeyProvider(self._config.secret_key)
         return ProcessPaymentWebhookUseCase(self.uow_factory, key_provider)

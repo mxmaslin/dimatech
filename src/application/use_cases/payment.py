@@ -22,7 +22,7 @@ class ProcessPaymentWebhookUseCase:
         self._uow_factory = uow_factory
         self._key_provider = key_provider
 
-    def _compute_signature(
+    def compute_signature(
         self, account_id: int, amount: Decimal, transaction_id: str, user_id: int
     ) -> str:
         raw = (
@@ -49,7 +49,7 @@ class ProcessPaymentWebhookUseCase:
         amount: Decimal,
         signature: str,
     ) -> PaymentResponse:
-        expected = self._compute_signature(account_id, amount, transaction_id, user_id)
+        expected = self.compute_signature(account_id, amount, transaction_id, user_id)
         if signature != expected:
             raise SignatureVerificationError()
 
@@ -67,7 +67,8 @@ class ProcessPaymentWebhookUseCase:
             if not account:
                 account = Account(user_id=user_id, balance=Decimal("0.00"))
                 account = await uow.accounts.create(account)
-            assert account.id is not None
+            if account.id is None:
+                raise RuntimeError("ProcessPaymentWebhookUseCase: account.id is None")
 
             payment = Payment(
                 transaction_id=transaction_id,

@@ -1,7 +1,7 @@
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, Numeric, String, func
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, Numeric, String, func, text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -41,7 +41,7 @@ class AccountModel(Base):
         Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
     balance: Mapped[Decimal] = mapped_column(
-        Numeric(12, 2), default=Decimal("0.00"), nullable=False
+        Numeric(12, 2), default=Decimal("0.00"), server_default=text("0.00"), nullable=False
     )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
@@ -51,9 +51,7 @@ class AccountModel(Base):
 class PaymentModel(Base):
     __tablename__ = "payments"
 
-    transaction_id: Mapped[str] = mapped_column(
-        String(255), primary_key=True, unique=True, nullable=False
-    )
+    transaction_id: Mapped[str] = mapped_column(String(255), primary_key=True, nullable=False)
     user_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )

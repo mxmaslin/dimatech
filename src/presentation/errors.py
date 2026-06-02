@@ -1,4 +1,6 @@
+from pydantic import ValidationError as PydanticValidationError
 from sanic import Sanic, response
+from sanic.exceptions import SanicException
 from sanic.request import Request
 
 from src.application.errors import (
@@ -8,6 +10,7 @@ from src.application.errors import (
     DuplicateError,
     NotFoundError,
     SignatureVerificationError,
+    ValidationError,
 )
 
 
@@ -47,6 +50,13 @@ def setup_error_handlers(app: Sanic) -> None:
             status=400,
         )
 
+    @app.exception(ValidationError)
+    async def handle_validation_error(_request: Request, exception: ValidationError):
+        return response.json(
+            {"error": "validation_error", "detail": exception.message},
+            status=400,
+        )
+
     @app.exception(ApplicationError)
     async def handle_application_error(_request: Request, exception: ApplicationError):
         return response.json(
@@ -54,8 +64,17 @@ def setup_error_handlers(app: Sanic) -> None:
             status=exception.status_code,
         )
 
-    @app.exception(ValueError)
-    async def handle_value_error(_request: Request, exception: ValueError):
+    @app.exception(SanicException)
+    async def handle_sanic_error(_request: Request, exception: SanicException):
+        return response.json(
+            {"error": "bad_request", "detail": str(exception)},
+            status=exception.status_code,
+        )
+
+    @app.exception(PydanticValidationError)
+    async def handle_pydantic_validation_error(
+        _request: Request, exception: PydanticValidationError
+    ):
         return response.json(
             {"error": "validation_error", "detail": str(exception)},
             status=400,

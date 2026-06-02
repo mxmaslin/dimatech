@@ -10,8 +10,7 @@ from src.application.use_cases.admin import (
     UpdateUserUseCase,
 )
 from src.presentation.middleware import AuthMiddleware
-
-admin_bp = Blueprint("admin", url_prefix="/users")
+from src.presentation.utils import require_json
 
 
 def setup_admin_routes(
@@ -26,7 +25,7 @@ def setup_admin_routes(
     @bp.post("/")
     async def create_user(request: Request):
         auth_middleware.require_admin(request)
-        body = UserCreateRequest(**request.json)
+        body = UserCreateRequest(**require_json(request))
         user = await create_user_use_case.execute(
             email=body.email,
             password=body.password,
@@ -49,7 +48,7 @@ def setup_admin_routes(
     @bp.put("/<user_id:int>")
     async def update_user(request: Request, user_id: int):
         auth_middleware.require_admin(request)
-        body = UserUpdateRequest(**request.json)
+        body = UserUpdateRequest(**require_json(request))
         user = await update_user_use_case.execute(
             user_id=user_id,
             email=body.email,

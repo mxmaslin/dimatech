@@ -148,10 +148,10 @@ class SqlAlchemyAccountRepository:
         )
         result = await self._session.execute(stmt)
         model = result.scalar_one_or_none()
-        if model:
-            await self._session.flush()
-            return self._to_domain(model)
-        raise ValueError(f"Account {account_id} not found")
+        # Account must exist — it was verified/created earlier in the same transaction
+        assert model is not None, f"Account {account_id} not found"
+        await self._session.flush()
+        return self._to_domain(model)
 
     @staticmethod
     def _to_domain(model: AccountModel) -> Account:

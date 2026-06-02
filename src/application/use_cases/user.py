@@ -14,7 +14,8 @@ class GetUserUseCase:
             user = await uow.users.get_by_id(user_id)
             if not user:
                 raise NotFoundError("User")
-            assert user.id is not None
+            if user.id is None:
+                raise RuntimeError("GetUserUseCase: user.id is None after fetch")
             return UserResponse(
                 id=user.id,
                 email=str(user.email),

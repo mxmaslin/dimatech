@@ -1,13 +1,13 @@
-from sanic import Sanic, response
+from sanic import Blueprint, Sanic, response
 
 from src.container import Container
 from src.infrastructure.config import AppConfig
 from src.presentation.errors import setup_error_handlers
 from src.presentation.middleware import setup_middleware
-from src.presentation.routes.admin import admin_bp, setup_admin_routes
-from src.presentation.routes.auth import auth_bp, setup_auth_routes
-from src.presentation.routes.payment import payment_bp, setup_payment_routes
-from src.presentation.routes.user import setup_user_routes, user_bp
+from src.presentation.routes.admin import setup_admin_routes
+from src.presentation.routes.auth import setup_auth_routes
+from src.presentation.routes.payment import setup_payment_routes
+from src.presentation.routes.user import setup_user_routes
 
 
 def create_app(config: AppConfig | None = None) -> Sanic:
@@ -23,6 +23,11 @@ def create_app(config: AppConfig | None = None) -> Sanic:
 
     auth_middleware = setup_middleware(app, container.jwt_service)
 
+    # Create fresh blueprints so create_app is re-entrant safe (e.g. in tests)
+    auth_bp = Blueprint("auth", url_prefix="/auth")
+    users_bp = Blueprint("users", url_prefix="/users")
+    payment_bp = Blueprint("payment", url_prefix="/payments")
+
     setup_auth_routes(
         auth_bp,
         container.login_use_case(),
@@ -30,8 +35,9 @@ def create_app(config: AppConfig | None = None) -> Sanic:
         auth_middleware,
     )
 
+    # All user+admin routes share /users prefix under a single blueprint
     setup_user_routes(
-        user_bp,
+        users_bp,
         container.get_user_use_case(),
         container.get_user_accounts_use_case(),
         container.get_user_payments_use_case(),
@@ -39,7 +45,7 @@ def create_app(config: AppConfig | None = None) -> Sanic:
     )
 
     setup_admin_routes(
-        admin_bp,
+        users_bp,
         container.create_user_use_case(),
         container.update_user_use_case(),
         container.delete_user_use_case(),
@@ -54,8 +60,7 @@ def create_app(config: AppConfig | None = None) -> Sanic:
     )
 
     app.blueprint(auth_bp)
-    app.blueprint(user_bp)
-    app.blueprint(admin_bp)
+    app.blueprint(users_bp)
     app.blueprint(payment_bp)
 
     setup_error_handlers(app)

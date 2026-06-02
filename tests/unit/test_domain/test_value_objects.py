@@ -1,6 +1,6 @@
 import pytest
 
-from src.domain.value_objects import Email, Password
+from src.domain.value_objects import Email
 
 
 class TestEmail:
@@ -20,13 +20,3 @@ class TestEmail:
     def test_hashable(self):
         emails = {Email("a@b.com"), Email("a@b.com")}
         assert len(emails) == 1
-
-
-class TestPassword:
-    def test_valid_password(self):
-        pwd = Password("abcdef")
-        assert str(pwd) == "***"
-
-    def test_short_password(self):
-        with pytest.raises(ValueError, match="at least 6"):
-            Password("abc12")

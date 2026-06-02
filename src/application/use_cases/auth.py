@@ -24,13 +24,15 @@ class LoginUseCase:
                 and user.is_active
                 and self._password_service.verify(password, user.password_hash)
             ):
-                assert user.id is not None
+                if user.id is None:
+                    raise RuntimeError("LoginUseCase: user.id is None after fetch")
                 token = self._jwt_service.create_access_token(user_id=user.id, role="user")
                 return token, user.id, "user"
 
             admin = await uow.admins.get_by_email(email)
             if admin and self._password_service.verify(password, admin.password_hash):
-                assert admin.id is not None
+                if admin.id is None:
+                    raise RuntimeError("LoginUseCase: admin.id is None after fetch")
                 token = self._jwt_service.create_access_token(user_id=admin.id, role="admin")
                 return token, admin.id, "admin"
 
@@ -46,7 +48,8 @@ class GetAdminUseCase:
             admin = await uow.admins.get_by_id(admin_id)
             if not admin:
                 raise NotFoundError("Admin")
-            assert admin.id is not None
+            if admin.id is None:
+                raise RuntimeError("GetAdminUseCase: admin.id is None after fetch")
             return AdminResponse(
                 id=admin.id,
                 email=str(admin.email),

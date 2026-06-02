@@ -13,15 +13,3 @@ class Email:
 
     def __str__(self) -> str:
         return self.value
-
-
-@dataclass(frozen=True)
-class Password:
-    value: str
-
-    def __post_init__(self) -> None:
-        if len(self.value) < 6:
-            raise ValueError("Password must be at least 6 characters long")
-
-    def __str__(self) -> str:
-        return "***"  # Never expose password value

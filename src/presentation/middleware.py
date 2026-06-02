@@ -22,6 +22,8 @@ class AuthMiddleware:
         if not token:
             raise AuthenticationError("Missing authorization header")
         payload = self._jwt_service.decode_token(token)
+        if payload is None:
+            raise AuthenticationError("Invalid or expired token")
         request.ctx.user_id = payload.get("user_id")
         request.ctx.role = payload.get("role")
         return payload

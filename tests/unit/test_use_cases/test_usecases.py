@@ -235,6 +235,7 @@ class TestUpdateUserUseCase:
     async def test_updates_email(self, mock_uow, mock_uow_factory, password_service):
         existing = User(id=1, email=Email("old@test.com"), password_hash="hash", full_name="User")
         mock_uow.users.get_by_id = AsyncMock(return_value=existing)
+        mock_uow.users.get_by_email = AsyncMock(return_value=None)
         mock_uow.users.update = AsyncMock(
             return_value=User(
                 id=1, email=Email("new@test.com"), password_hash="hash", full_name="User"
@@ -251,6 +252,22 @@ class TestUpdateUserUseCase:
         uc = UpdateUserUseCase(mock_uow_factory, password_service)
         with pytest.raises(NotFoundError):
             await uc.execute(999, email="x@y.com")
+
+    @pytest.mark.asyncio
+    async def test_duplicate_email_on_update(self, mock_uow, mock_uow_factory, password_service):
+        existing = User(
+            id=1, email=Email("current@test.com"), password_hash="hash", full_name="User"
+        )
+        mock_uow.users.get_by_id = AsyncMock(return_value=existing)
+        mock_uow.users.get_by_email = AsyncMock(
+            return_value=User(
+                id=2, email=Email("taken@test.com"), password_hash="h2", full_name="Other"
+            )
+        )
+
+        uc = UpdateUserUseCase(mock_uow_factory, password_service)
+        with pytest.raises(DuplicateError):
+            await uc.execute(1, email="taken@test.com")
 
 
 class TestDeleteUserUseCase:
@@ -435,7 +452,7 @@ class TestProcessPaymentWebhookUseCase:
         config.secret_key = "gfdmhghif38yrf9ew0jkf32"
         uc = ProcessPaymentWebhookUseCase(mock_uow_factory, config)
 
-        signature = uc._compute_signature(
+        signature = uc.compute_signature(
             account_id=1,
             amount=Decimal("100"),
             transaction_id="5eae174f-7cd0-472c-bd36-35660f00132b",
@@ -449,9 +466,9 @@ class TestProcessPaymentWebhookUseCase:
         config.secret_key = "test-secret"
         uc = ProcessPaymentWebhookUseCase(mock_uow_factory, config)
 
-        sig_int = uc._compute_signature(1, Decimal("100"), "tx-1", 1)
-        sig_decimal = uc._compute_signature(1, Decimal("100.00"), "tx-1", 1)
-        sig_float_parsed = uc._compute_signature(1, Decimal("100.0"), "tx-1", 1)
+        sig_int = uc.compute_signature(1, Decimal("100"), "tx-1", 1)
+        sig_decimal = uc.compute_signature(1, Decimal("100.00"), "tx-1", 1)
+        sig_float_parsed = uc.compute_signature(1, Decimal("100.0"), "tx-1", 1)
 
         assert sig_int == sig_decimal == sig_float_parsed
 
