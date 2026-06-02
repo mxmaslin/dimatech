@@ -261,3 +261,162 @@ async def test_forbidden_response_body(test_client):
     _, resp = await test_client.get("/users/me", headers=headers)
     assert resp.status == 403
     assert resp.json["error"] == "forbidden"
+
+
+# --- Health check tests ---
+
+@pytest.mark.asyncio
+async def test_health_endpoint_with_db_check(test_client):
+    _, resp = await test_client.get("/health")
+    assert resp.status == 200
+    body = resp.json
+    assert body["status"] == "ok"
+    assert body["database"] == "connected"
+
+
+@pytest.mark.asyncio
+async def test_health_live_endpoint(test_client):
+    _, resp = await test_client.get("/health/live")
+    assert resp.status == 200
+    assert resp.json == {"status": "ok"}
+
+
+@pytest.mark.asyncio
+async def test_health_ready_endpoint(test_client):
+    _, resp = await test_client.get("/health/ready")
+    assert resp.status == 200
+    body = resp.json
+    assert body["status"] == "ready"
+    assert body["database"] == "connected"
+
+
+# --- CORS tests ---
+
+@pytest.mark.asyncio
+async def test_cors_headers_on_get(test_client):
+    _, resp = await test_client.get("/health")
+    assert resp.headers.get("Access-Control-Allow-Origin") == "*"
+
+
+@pytest.mark.asyncio
+async def test_cors_headers_on_post(test_client):
+    _, resp = await test_client.post(
+        "/auth/login",
+        json={"email": "user@example.com", "password": "user123"},
+    )
+    assert resp.headers.get("Access-Control-Allow-Origin") == "*"
+
+
+@pytest.mark.asyncio
+async def test_cors_preflight(test_client):
+    _, resp = await test_client.options(
+        "/payments/webhook",
+        headers={
+            "Origin": "http://example.com",
+            "Access-Control-Request-Method": "POST",
+        },
+    )
+    # Sanic returns 204 for empty OPTIONS responses
+    assert resp.status == 204
+    assert resp.headers.get("Access-Control-Allow-Origin") == "*"
+    assert "POST" in resp.headers.get("Access-Control-Allow-Methods", "")
+
+
+# --- Rate limiter tests ---
+
+@pytest.mark.asyncio
+async def test_rate_limiter_allows_normal_requests(test_client):
+    """Should allow requests under the limit."""
+    for _ in range(3):
+        _, resp = await test_client.post(
+            "/payments/webhook",
+            json={"invalid": "body"},
+        )
+        # Should either get a validation error (422) or pass through
+        assert resp.status != 429
+
+
+@pytest.mark.asyncio
+async def test_rate_limiter_block_excess(test_client):
+    """With a very low limit, the rate limiter should block excess requests."""
+    # Patch the limiter's limit to 2 requests for the test
+    # Since we can't easily patch the middleware from outside, this tests
+    # that the rate limiter class itself properly blocks.
+
+    from src.presentation.rate_limiter import SlidingWindowRateLimiter
+    from unittest.mock import MagicMock
+
+    limiter = SlidingWindowRateLimiter(max_requests=2, window_seconds=60)
+    request = MagicMock()
+    request.path = "/payments/webhook"
+    request.method = "POST"
+    request.headers = {}
+    request.ip = "127.0.0.1"
+
+    # First two should pass
+    limiter.check(request)
+    limiter.check(request)
+
+    # Third should fail
+    from src.application.errors import ApplicationError
+    with pytest.raises(ApplicationError) as exc_info:
+        limiter.check(request)
+    assert exc_info.value.status_code == 429
+
+
+@pytest.mark.asyncio
+async def test_rate_limiter_window_expiry(test_client):
+    """Requests outside the window should be allowed again."""
+    from src.presentation.rate_limiter import SlidingWindowRateLimiter
+    from unittest.mock import MagicMock
+    import time
+
+    limiter = SlidingWindowRateLimiter(max_requests=1, window_seconds=0.1)
+    request = MagicMock()
+    request.path = "/payments/webhook"
+    request.method = "POST"
+    request.headers = {}
+    request.ip = "127.0.0.1"
+
+    # First passes
+    limiter.check(request)
+
+    # Second fails
+    from src.application.errors import ApplicationError
+    with pytest.raises(ApplicationError):
+        limiter.check(request)
+
+    # Wait for window to expire
+    time.sleep(0.15)
+
+    # Should pass again
+    limiter.check(request)
+
+
+@pytest.mark.asyncio
+async def test_rate_limiter_different_ips(test_client):
+    """Different IPs should have independent counters."""
+    from src.presentation.rate_limiter import SlidingWindowRateLimiter
+    from unittest.mock import MagicMock
+
+    limiter = SlidingWindowRateLimiter(max_requests=1, window_seconds=60)
+    ip1_req = MagicMock()
+    ip1_req.path = "/payments/webhook"
+    ip1_req.method = "POST"
+    ip1_req.headers = {}
+    ip1_req.ip = "10.0.0.1"
+
+    ip2_req = MagicMock()
+    ip2_req.path = "/payments/webhook"
+    ip2_req.method = "POST"
+    ip2_req.headers = {}
+    ip2_req.ip = "10.0.0.2"
+
+    limiter.check(ip1_req)
+
+    from src.application.errors import ApplicationError
+    with pytest.raises(ApplicationError):
+        limiter.check(ip1_req)
+
+    # Different IP should still pass
+    limiter.check(ip2_req)

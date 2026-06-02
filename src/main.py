@@ -1,9 +1,12 @@
 from sanic import Blueprint, Sanic, response
+from sqlalchemy import text
 
 from src.container import Container
 from src.infrastructure.config import AppConfig
+from src.presentation.cors import setup_cors
 from src.presentation.errors import setup_error_handlers
 from src.presentation.middleware import setup_middleware
+from src.presentation.rate_limiter import setup_rate_limiter
 from src.presentation.routes.admin import setup_admin_routes
 from src.presentation.routes.auth import setup_auth_routes
 from src.presentation.routes.payment import setup_payment_routes
@@ -22,6 +25,10 @@ def create_app(config: AppConfig | None = None) -> Sanic:
     app.ctx.config = config
 
     auth_middleware = setup_middleware(app, container.jwt_service)
+
+    setup_cors(app)
+
+    setup_rate_limiter(app)
 
     # Create fresh blueprints so create_app is re-entrant safe (e.g. in tests)
     auth_bp = Blueprint("auth", url_prefix="/auth")
@@ -67,7 +74,37 @@ def create_app(config: AppConfig | None = None) -> Sanic:
 
     @app.get("/health")
     async def health(_request):
+        db_ok = False
+        try:
+            async with container.session_factory() as session:
+                await session.execute(text("SELECT 1"))
+                db_ok = True
+        except Exception:
+            db_ok = False
+
+        status_code = 200 if db_ok else 503
+        return response.json(
+            {"status": "ok" if db_ok else "degraded", "database": "connected" if db_ok else "disconnected"},
+            status=status_code,
+        )
+
+    @app.get("/health/live")
+    async def health_live(_request):
         return response.json({"status": "ok"})
+
+    @app.get("/health/ready")
+    async def health_ready(_request):
+        db_ok = False
+        try:
+            async with container.session_factory() as session:
+                await session.execute(text("SELECT 1"))
+                db_ok = True
+        except Exception:
+            db_ok = False
+
+        if not db_ok:
+            return response.json({"status": "not ready", "database": "disconnected"}, status=503)
+        return response.json({"status": "ready", "database": "connected"})
 
     return app
 

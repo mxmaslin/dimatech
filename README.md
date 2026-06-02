@@ -110,9 +110,29 @@ API будет доступно по адресу `http://localhost:8000`.
 
 ### Health check
 
-| Метод | Endpoint   | Описание        |
-|-------|------------|-----------------|
-| GET   | /health    | Проверка статуса|
+| Метод | Endpoint       | Описание                                              |
+|-------|----------------|-------------------------------------------------------|
+| GET   | /health        | Общий статус приложения + проверка подключения к БД   |
+| GET   | /health/live   | Liveness-проверка (K8s) — всегда ok                   |
+| GET   | /health/ready  | Readiness-проверка (K8s) — проверяет готовность БД    |
+
+### Rate Limiting
+
+| Endpoint          | Лимит                  |
+|-------------------|------------------------|
+| POST /payments/webhook | 10 запросов / 60 сек на IP |
+
+При превышении возвращается `HTTP 429`:
+
+```json
+{"error": "application_error", "detail": "Rate limit exceeded. Try again later."}
+```
+
+### CORS
+
+Разрешены все origins, методы `GET/POST/PUT/DELETE/OPTIONS`, заголовки `Content-Type/Authorization`.
+
+## Вебхук платежей
 
 ## Вебхук платежей
 
@@ -171,6 +191,8 @@ pytest -v --cov=src --cov-report=term-missing --cov-report=html
     ├── presentation/      # Роуты Sanic, middleware, обработчики ошибок
     │   ├── routes/
     │   ├── middleware.py
+    │   ├── cors.py            # CORS middleware
+    │   ├── rate_limiter.py    # In-memory rate limiter
     │   ├── errors.py
     │   └── utils.py
     ├── container.py       # DI-контейнер
