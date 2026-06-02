@@ -3,18 +3,13 @@ from pydantic_settings import BaseSettings
 
 class AppConfig(BaseSettings):
     database_url: str = "postgresql+asyncpg://dimatech:dimatech@localhost:5432/dimatech"
-    secret_key: str = "please-change-this-secret-key-2024"
+    secret_key: str = "gfdmhghif38yrf9ew0jkf32"
     jwt_secret: str = "please-change-this-jwt-secret-min-32-chars"
     jwt_algorithm: str = "HS256"
     jwt_expiry_minutes: int = 60
     debug: bool = True
     db_pool_size: int = 5
     db_max_overflow: int = 10
-
-    default_user_email: str = "user@example.com"
-    default_user_password: str = "user123"
-    default_admin_email: str = "admin@example.com"
-    default_admin_password: str = "admin123"
 
     def __post_init__(self) -> None:
         if len(self.jwt_secret) < 32:
