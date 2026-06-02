@@ -26,13 +26,16 @@ make docker-up
 
 # Посмотреть логи
 make docker-logs
+
+# Наполнить БД тестовыми данными
+docker compose exec app python scripts/seed.py
 ```
 
-API будет доступно по адресу `http://localhost:8000`.
+API будет доступно по адресу `http://localhost:8001`.
 
 ### Вариант 2: Локальная разработка
 
-Требования: Python 3.12+, PostgreSQL 16+
+Требования: Python 3.11+, PostgreSQL 16+
 
 ```bash
 # 1. Создать базу данных PostgreSQL
@@ -48,9 +51,15 @@ make install
 # 4. Активировать виртуальное окружение
 source .venv/bin/activate
 
-# 5. Применить миграции и запустить dev-сервер (или: make run)
+# 5. Применить миграции
 alembic upgrade head
-sanic src.main:create_app --factory --host=0.0.0.0 --port=8000 --dev
+
+# 6. Наполнить БД тестовыми данными (первый запуск)
+python scripts/seed.py
+
+# 7. Запустить dev-сервер
+make run
+# или: sanic src.main:create_app --factory --host=0.0.0.0 --port=8000 --dev
 ```
 
 > Все `make`-команды (`make test`, `make lint` и т.д.) автоматически создают и используют виртуальное окружение `.venv`. Если хотите запускать команды напрямую — сначала активируйте venv: `source .venv/bin/activate`.
@@ -58,6 +67,8 @@ sanic src.main:create_app --factory --host=0.0.0.0 --port=8000 --dev
 API будет доступно по адресу `http://localhost:8000`.
 
 ## Учётные данные по умолчанию
+
+После запуска `python scripts/seed.py` будут созданы тестовые аккаунты:
 
 | Роль  | Email                | Пароль   |
 |-------|----------------------|----------|
@@ -142,7 +153,9 @@ pytest -v --cov=src --cov-report=term-missing --cov-report=html
 ├── migrations/
 │   ├── env.py
 │   └── versions/
-└── src/
+├── scripts/
+│   └── seed.py               # Наполнение БД тестовыми данными
+├── src/
     ├── domain/            # Бизнес-сущности (без зависимостей от фреймворков)
     │   ├── entities.py
     │   ├── value_objects.py
@@ -169,6 +182,7 @@ pytest -v --cov=src --cov-report=term-missing --cov-report=html
 ```bash
 make install     # Установить зависимости
 make run         # Запустить dev-сервер
+make seed        # Наполнить БД тестовыми данными (user/admin)
 make test        # Запустить тесты с покрытием
 make lint        # Проверить качество кода
 make format      # Отформатировать код

@@ -16,6 +16,9 @@ install: $(VENV)/bin/python
 	$(PIP) install -r requirements.txt
 	$(PIP) install -e ".[dev]"
 
+seed: install
+	$(PYTHON) scripts/seed.py
+
 run: install
 	cp -n .env.example .env 2>/dev/null || true
 	$(ALEMBIC) upgrade head
