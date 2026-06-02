@@ -66,9 +66,14 @@ def setup_error_handlers(app: Sanic) -> None:
 
     @app.exception(SanicException)
     async def handle_sanic_error(_request: Request, exception: SanicException):
+        status = exception.status_code
+        if status < 500:
+            error = "bad_request"
+        else:
+            error = "internal_error"
         return response.json(
-            {"error": "bad_request", "detail": str(exception)},
-            status=exception.status_code,
+            {"error": error, "detail": str(exception)},
+            status=status,
         )
 
     @app.exception(PydanticValidationError)
@@ -77,5 +82,5 @@ def setup_error_handlers(app: Sanic) -> None:
     ):
         return response.json(
             {"error": "validation_error", "detail": str(exception)},
-            status=400,
+            status=422,
         )

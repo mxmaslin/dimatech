@@ -19,8 +19,8 @@ class UserModel(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
-    accounts = relationship("AccountModel", back_populates="user", lazy="selectin")
-    payments = relationship("PaymentModel", back_populates="user", lazy="selectin")
+    accounts = relationship("AccountModel", back_populates="user", lazy="raise")
+    payments = relationship("PaymentModel", back_populates="user", lazy="raise")
 
 
 class AdminModel(Base):
@@ -45,7 +45,7 @@ class AccountModel(Base):
     )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
-    user = relationship("UserModel", back_populates="accounts", lazy="selectin")
+    user = relationship("UserModel", back_populates="accounts", lazy="raise")
 
 
 class PaymentModel(Base):
@@ -61,4 +61,4 @@ class PaymentModel(Base):
     amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
-    user = relationship("UserModel", back_populates="payments", lazy="selectin")
+    user = relationship("UserModel", back_populates="payments", lazy="raise")

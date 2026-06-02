@@ -149,7 +149,8 @@ class SqlAlchemyAccountRepository:
         result = await self._session.execute(stmt)
         model = result.scalar_one_or_none()
         # Account must exist — it was verified/created earlier in the same transaction
-        assert model is not None, f"Account {account_id} not found"
+        if model is None:
+                raise RuntimeError(f"Account {account_id} not found")
         await self._session.flush()
         return self._to_domain(model)
 
@@ -208,6 +209,14 @@ class SqlAlchemyPaymentRepository:
         )
         result = await self._session.execute(stmt)
         model = result.scalar_one_or_none()
+
+        # Note on PostgreSQL version compatibility:
+        # PG < 15  → RETURNING returns no row on conflict → model is None
+        # PG 15+   → RETURNING may return the existing row (partitioned tables)
+        # SQLite   → RETURNING returns no row on conflict → model is None
+        # The re-fetch below safely resolves all cases:
+        #   - If a row was inserted: model is populated → created=True
+        #   - If a conflict occurred: model is None → re-fetch existing → created=False
         if model:
             await self._session.flush()
             return self._to_domain(model), True

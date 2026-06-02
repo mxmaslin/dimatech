@@ -8,9 +8,6 @@ from src.application.use_cases.user import (
 )
 from src.presentation.middleware import AuthMiddleware
 
-user_bp = Blueprint("user", url_prefix="/users")
-
-
 def setup_user_routes(
     bp: Blueprint,
     get_user_use_case: GetUserUseCase,

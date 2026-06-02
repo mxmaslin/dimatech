@@ -1,5 +1,7 @@
+import sys
 from abc import ABC, abstractmethod
 from decimal import Decimal
+from types import TracebackType
 from typing import Any, Optional, Protocol
 
 from src.domain.entities import Account, Admin, Payment, User
@@ -73,7 +75,12 @@ class UnitOfWork(ABC):
     async def __aenter__(self): ...
 
     @abstractmethod
-    async def __aexit__(self, *args): ...
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> None: ...
 
     @property
     @abstractmethod

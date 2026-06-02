@@ -1,13 +1,10 @@
 from sanic import Blueprint, response
 from sanic.request import Request
 
-from src.application.dto import LoginRequest
+from src.application.dto import LoginRequest, TokenResponse
 from src.application.use_cases.auth import GetAdminUseCase, LoginUseCase
 from src.presentation.middleware import AuthMiddleware
 from src.presentation.utils import require_json
-
-auth_bp = Blueprint("auth", url_prefix="/auth")
-
 
 def setup_auth_routes(
     bp: Blueprint,
@@ -20,12 +17,11 @@ def setup_auth_routes(
         body = LoginRequest(**require_json(request))
         token, user_id, role = await login_use_case.execute(body.email, body.password)
         return response.json(
-            {
-                "access_token": token,
-                "token_type": "Bearer",
-                "user_id": user_id,
-                "role": role,
-            }
+            TokenResponse(
+                access_token=token,
+                user_id=user_id,
+                role=role,
+            ).model_dump(mode="json")
         )
 
     @bp.get("/admins/me")

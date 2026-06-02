@@ -30,9 +30,9 @@ class SqlAlchemyUnitOfWork(UnitOfWork):
         self._payments = SqlAlchemyPaymentRepository(self._session)
         return self
 
-    async def __aexit__(self, *args):
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
         try:
-            if args[0] is None:  # no exception
+            if exc_type is None:
                 await self._session.commit()
             else:
                 await self._session.rollback()

@@ -247,7 +247,7 @@ async def test_webhook_invalid_body_returns_422(test_client):
         "/payments/webhook",
         json={"invalid": "data"},
     )
-    assert response.status == 400
+    assert response.status == 422
 
 
 @pytest.mark.asyncio

@@ -61,4 +61,4 @@ def setup_admin_routes(
     async def delete_user(request: Request, user_id: int):
         auth_middleware.require_admin(request)
         await delete_user_use_case.execute(user_id)
-        return response.json({"message": "User deleted"}, status=200)
+        return response.empty(status=204)

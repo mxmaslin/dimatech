@@ -7,8 +7,8 @@ def create_engine(config: AppConfig):
     return create_async_engine(
         config.database_url,
         echo=config.debug,
-        pool_size=5,
-        max_overflow=10,
+        pool_size=config.db_pool_size,
+        max_overflow=config.db_max_overflow,
     )
 
 

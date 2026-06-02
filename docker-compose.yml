@@ -6,7 +6,7 @@ services:
       POSTGRES_PASSWORD: dimatech
       POSTGRES_DB: dimatech
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -25,7 +25,7 @@ services:
     environment:
       DATABASE_URL: "postgresql+asyncpg://dimatech:dimatech@db:5432/dimatech"
     ports:
-      - "8000:8000"
+      - "8001:8000"
     volumes:
       - ./migrations:/app/migrations
       - ./src:/app/src

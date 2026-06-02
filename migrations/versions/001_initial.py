@@ -1,8 +1,4 @@
-"""Initial schema: users, admins, accounts, payments + seed data"""
-from datetime import datetime
-from decimal import Decimal
-
-import bcrypt
+"""Initial schema: users, admins, accounts, payments"""
 import sqlalchemy as sa
 from alembic import op
 
@@ -83,39 +79,6 @@ def upgrade() -> None:
             sa.DateTime(timezone=True),
             server_default=sa.text("now()"),
         ),
-    )
-
-    conn = op.get_bind()
-
-    user_password = bcrypt.hashpw(b"user123", bcrypt.gensalt()).decode()
-    admin_password = bcrypt.hashpw(b"admin123", bcrypt.gensalt()).decode()
-
-    conn.execute(
-        sa.text(
-            "INSERT INTO users (email, password_hash, full_name) "
-            "VALUES (:email, :pwd, :name)"
-        ),
-        {"email": "user@example.com", "pwd": user_password, "name": "Test User"},
-    )
-
-    conn.execute(
-        sa.text(
-            "INSERT INTO admins (email, password_hash, full_name) "
-            "VALUES (:email, :pwd, :name)"
-        ),
-        {
-            "email": "admin@example.com",
-            "pwd": admin_password,
-            "name": "Test Admin",
-        },
-    )
-
-    conn.execute(
-        sa.text(
-            "INSERT INTO accounts (user_id, balance) "
-            "VALUES (:uid, :bal)"
-        ),
-        {"uid": 1, "bal": Decimal("0.00")},
     )
 
 
