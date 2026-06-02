@@ -1,109 +1,111 @@
-# DimaTech — REST API Test Assignment
+# DimaTech — Тестовое задание REST API
 
-Async REST API built with **Sanic**, **SQLAlchemy 2.0** (async), **PostgreSQL** in Clean Architecture.
+Асинхронное REST API на **Sanic**, **SQLAlchemy 2.0** (async), **PostgreSQL** в парадигме Clean Architecture.
 
-## Stack
+## Стек
 
-- **Framework:** Sanic (async)
+- **Фреймворк:** Sanic (async)
 - **ORM:** SQLAlchemy 2.0 (async)
-- **Database:** PostgreSQL 16
-- **Migrations:** Alembic
-- **Auth:** JWT (HS256) + bcrypt
-- **Validation:** Pydantic v2
-- **Tests:** pytest + pytest-asyncio
+- **База данных:** PostgreSQL 16
+- **Миграции:** Alembic
+- **Аутентификация:** JWT (HS256) + bcrypt
+- **Валидация:** Pydantic v2
+- **Тесты:** pytest + pytest-asyncio
 
-## Quick Start
+## Быстрый старт
 
-### Option 1: Docker Compose (recommended)
+### Вариант 1: Docker Compose (рекомендуется)
 
 ```bash
-# Copy environment config
+# Скопировать конфиг окружения
 cp .env.example .env
 
-# Build and start services
+# Собрать и запустить сервисы
 make docker-up
-# or: docker compose up --build -d
+# или: docker compose up --build -d
 
-# Check logs
+# Посмотреть логи
 make docker-logs
 ```
 
-The API will be available at `http://localhost:8000`.
+API будет доступно по адресу `http://localhost:8000`.
 
-### Option 2: Local development
+### Вариант 2: Локальная разработка
 
-Prerequisites: Python 3.12+, PostgreSQL 16+
+Требования: Python 3.12+, PostgreSQL 16+
 
 ```bash
-# 1. Create PostgreSQL database
+# 1. Создать базу данных PostgreSQL
 createdb dimatech
 
-# 2. Copy environment config
+# 2. Скопировать конфиг окружения
 cp .env.example .env
-# Edit .env if needed (DATABASE_URL, secrets)
+# При необходимости отредактировать .env (DATABASE_URL, секреты)
 
-# 3. Install dependencies (auto-creates .venv)
+# 3. Установить зависимости (автоматически создаёт .venv)
 make install
 
-# 4. Activate virtual environment
+# 4. Активировать виртуальное окружение
 source .venv/bin/activate
 
-# 5. Run migrations & start dev server (or: make run)
+# 5. Применить миграции и запустить dev-сервер (или: make run)
 alembic upgrade head
 sanic src.main:create_app --factory --host=0.0.0.0 --port=8000 --dev
 ```
 
-> All `make` commands (`make test`, `make lint`, etc.) automatically create and use the `.venv` virtual environment. If you prefer to run commands directly, activate the venv first with `source .venv/bin/activate`.
+> Все `make`-команды (`make test`, `make lint` и т.д.) автоматически создают и используют виртуальное окружение `.venv`. Если хотите запускать команды напрямую — сначала активируйте venv: `source .venv/bin/activate`.
 
-The API will be available at `http://localhost:8000`.
+API будет доступно по адресу `http://localhost:8000`.
 
-## Default Credentials
+## Учётные данные по умолчанию
 
-| Role  | Email                | Password  |
-|-------|----------------------|-----------|
-| User  | user@example.com     | user123   |
-| Admin | admin@example.com    | admin123  |
+| Роль  | Email                | Пароль   |
+|-------|----------------------|----------|
+| User  | user@example.com     | user123  |
+| Admin | admin@example.com    | admin123 |
 
 ## API Endpoints
 
-### Authentication
+### Аутентификация
 
-| Method | Endpoint       | Auth  | Description          |
-|--------|----------------|-------|----------------------|
-| POST   | /auth/login    | —     | Login by email/password |
-| GET    | /auth/admins/me | admin | Get admin profile    |
+| Метод | Endpoint        | Доступ | Описание                    |
+|-------|-----------------|--------|-----------------------------|
+| POST  | /auth/login     | —      | Вход по email/password      |
+| GET   | /auth/admins/me | admin  | Профиль администратора      |
 
-### User endpoints
+### Пользовательские endpoints
 
-| Method | Endpoint               | Auth | Description              |
-|--------|------------------------|------|--------------------------|
-| GET    | /users/me              | user | Get own profile          |
-| GET    | /users/me/accounts     | user | List own accounts        |
-| GET    | /users/me/payments     | user | List own payments        |
+| Метод | Endpoint              | Доступ | Описание                 |
+|-------|-----------------------|--------|--------------------------|
+| GET   | /users/me             | user   | Свой профиль             |
+| GET   | /users/me/accounts    | user   | Список своих счетов      |
+| GET   | /users/me/payments    | user   | Список своих платежей    |
 
-### Admin endpoints
+### Администраторские endpoints
 
-| Method | Endpoint                   | Auth  | Description              |
-|--------|----------------------------|-------|--------------------------|
-| POST   | /users/                    | admin | Create a user            |
-| GET    | /users/                    | admin | List all users           |
-| PUT    | /users/:user_id            | admin | Update a user            |
-| DELETE | /users/:user_id            | admin | Delete a user            |
-| GET    | /users/:user_id/accounts   | admin | Get user accounts        |
+| Метод | Endpoint                  | Доступ | Описание                  |
+|-------|---------------------------|--------|---------------------------|
+| POST  | /users/                   | admin  | Создать пользователя      |
+| GET   | /users/                   | admin  | Список пользователей      |
+| PUT   | /users/:user_id           | admin  | Обновить пользователя     |
+| DELETE| /users/:user_id           | admin  | Удалить пользователя      |
+| GET   | /users/:user_id/accounts  | admin  | Счета пользователя        |
 
-### Payment webhook
+### Вебхук платежей
 
-| Method | Endpoint           | Auth | Description                  |
-|--------|--------------------|------|------------------------------|
-| POST   | /payments/webhook  | —    | Process payment webhook      |
+| Метод | Endpoint          | Доступ | Описание                      |
+|-------|-------------------|--------|-------------------------------|
+| POST  | /payments/webhook | —      | Обработка вебхука платежа     |
 
-### Health
+### Health check
 
-| Method | Endpoint   | Description          |
-|--------|------------|----------------------|
-| GET    | /health    | Health check         |
+| Метод | Endpoint   | Описание        |
+|-------|------------|-----------------|
+| GET   | /health    | Проверка статуса|
 
-## Payment Webhook
+## Вебхук платежей
+
+Тело запроса:
 
 ```json
 {
@@ -115,23 +117,23 @@ The API will be available at `http://localhost:8000`.
 }
 ```
 
-The signature is SHA256 of concatenated values in alphabetical key order plus the secret key:
+Подпись — SHA256 от конкатенации полей в алфавитном порядке ключей + секретный ключ:
 `{account_id}{amount}{transaction_id}{user_id}{secret_key}`
 
-## Running Tests
+## Запуск тестов
 
 ```bash
-# Run all tests
+# Запустить все тесты
 make test
 
-# Run with coverage
+# Запустить с отчётом о покрытии
 pytest -v --cov=src --cov-report=term-missing --cov-report=html
 ```
 
-## Project Structure
+## Структура проекта
 
 ```
-├── alembic.ini            # Alembic config (honours $DATABASE_URL)
+├── alembic.ini            # Конфиг Alembic (учитывает $DATABASE_URL)
 ├── docker-compose.yml
 ├── Dockerfile
 ├── Makefile
@@ -141,36 +143,36 @@ pytest -v --cov=src --cov-report=term-missing --cov-report=html
 │   ├── env.py
 │   └── versions/
 └── src/
-    ├── domain/            # Business entities (no framework dependencies)
+    ├── domain/            # Бизнес-сущности (без зависимостей от фреймворков)
     │   ├── entities.py
     │   ├── value_objects.py
     │   └── interfaces.py
-    ├── application/       # Use cases & DTOs
+    ├── application/       # Use cases и DTO
     │   ├── dto.py
     │   ├── errors.py
     │   └── use_cases/
-    ├── infrastructure/    # Database, auth, config
+    ├── infrastructure/    # База данных, аутентификация, конфиг
     │   ├── config.py
     │   ├── database/
     │   └── auth/
-    ├── presentation/      # Sanic routes, middleware, error handlers
+    ├── presentation/      # Роуты Sanic, middleware, обработчики ошибок
     │   ├── routes/
     │   ├── middleware.py
     │   ├── errors.py
     │   └── utils.py
-    ├── container.py       # DI container
-    └── main.py            # App factory
+    ├── container.py       # DI-контейнер
+    └── main.py            # Фабрика приложения
 ```
 
-## Available Make Commands
+## Доступные Make-команды
 
 ```bash
-make install     # Install dependencies
-make run         # Run dev server
-make test        # Run tests with coverage
-make lint        # Check code quality
-make format      # Format code
-make docker-up   # Start Docker services
-make docker-down # Stop Docker services
-make clean       # Clean temporary files
+make install     # Установить зависимости
+make run         # Запустить dev-сервер
+make test        # Запустить тесты с покрытием
+make lint        # Проверить качество кода
+make format      # Отформатировать код
+make docker-up   # Запустить Docker-сервисы
+make docker-down # Остановить Docker-сервисы
+make clean       # Очистить временные файлы
 ```
