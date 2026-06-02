@@ -35,3 +35,10 @@ class DuplicateError(ApplicationError):
 class SignatureVerificationError(ApplicationError):
     def __init__(self, message: str = "Invalid signature"):
         super().__init__(message, status_code=400)
+
+
+class InternalError(ApplicationError):
+    """Error representing an unexpected internal state (should never happen)."""
+
+    def __init__(self, message: str = "Internal server error"):
+        super().__init__(message, status_code=500)

@@ -3,7 +3,7 @@ from collections.abc import Callable
 from decimal import Decimal
 
 from src.application.dto import PaymentResponse
-from src.application.errors import NotFoundError, SignatureVerificationError
+from src.application.errors import InternalError, NotFoundError, SignatureVerificationError
 from src.domain.entities import Account, Payment
 from src.domain.interfaces import SecretKeyProvider, UnitOfWork
 
@@ -68,7 +68,7 @@ class ProcessPaymentWebhookUseCase:
                 account = Account(user_id=user_id, balance=Decimal("0.00"))
                 account = await uow.accounts.create(account)
             if account.id is None:
-                raise RuntimeError("ProcessPaymentWebhookUseCase: account.id is None")
+                raise InternalError("Account id is None after create")
 
             payment = Payment(
                 transaction_id=transaction_id,

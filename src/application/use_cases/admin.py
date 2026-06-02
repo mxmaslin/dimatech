@@ -1,7 +1,7 @@
 from collections.abc import Callable
 
 from src.application.dto import AccountResponse, UserResponse
-from src.application.errors import DuplicateError, NotFoundError
+from src.application.errors import DuplicateError, InternalError, NotFoundError
 from src.domain.entities import User
 from src.domain.interfaces import PasswordService, UnitOfWork
 from src.domain.value_objects import Email
@@ -30,7 +30,7 @@ class CreateUserUseCase:
             )
             user = await uow.users.create(user)
             if user.id is None:
-                raise RuntimeError("CreateUserUseCase: user.id is None after create")
+                raise InternalError("User id is None after create")
             return UserResponse(
                 id=user.id,
                 email=str(user.email),
@@ -71,7 +71,7 @@ class UpdateUserUseCase:
 
             user = await uow.users.update(user)
             if user.id is None:
-                raise RuntimeError("UpdateUserUseCase: user.id is None after update")
+                raise InternalError("User id is None after update")
             return UserResponse(
                 id=user.id,
                 email=str(user.email),
@@ -98,14 +98,18 @@ class ListUsersUseCase:
     async def execute(self) -> list[UserResponse]:
         async with self._uow_factory() as uow:
             users = await uow.users.list_all()
-            return [
-                UserResponse(
-                    id=u.id,  # type: ignore[arg-type]
-                    email=str(u.email),
-                    full_name=u.full_name,
+            result: list[UserResponse] = []
+            for u in users:
+                if u.id is None:
+                    raise InternalError("User id is None after persistence")
+                result.append(
+                    UserResponse(
+                        id=u.id,
+                        email=str(u.email),
+                        full_name=u.full_name,
+                    )
                 )
-                for u in users
-            ]
+            return result
 
 
 class GetUserAccountsAdminUseCase:
@@ -118,11 +122,15 @@ class GetUserAccountsAdminUseCase:
             if not user:
                 raise NotFoundError("User")
             accounts = await uow.accounts.get_by_user_id(user_id)
-            return [
-                AccountResponse(
-                    id=acc.id,  # type: ignore[arg-type]
-                    user_id=acc.user_id,
-                    balance=acc.balance,
+            result: list[AccountResponse] = []
+            for acc in accounts:
+                if acc.id is None:
+                    raise InternalError("Account id is None after persistence")
+                result.append(
+                    AccountResponse(
+                        id=acc.id,
+                        user_id=acc.user_id,
+                        balance=acc.balance,
+                    )
                 )
-                for acc in accounts
-            ]
+            return result

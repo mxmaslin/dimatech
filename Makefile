@@ -1,24 +1,35 @@
-.PHONY: install run test lint docker-up docker-down clean
+VENV = .venv
+PYTHON = $(VENV)/bin/python
+PIP = $(VENV)/bin/pip
+ALEMBIC = $(VENV)/bin/alembic
+SANIC = $(VENV)/bin/sanic
+RUFF = $(VENV)/bin/ruff
+PYTEST = $(VENV)/bin/pytest
 
-install:
-	pip install --upgrade pip
-	pip install -r requirements.txt
-	pip install -e ".[dev]"
+.PHONY: install run test lint format docker-up docker-down docker-logs clean
 
-run:
+$(VENV)/bin/python:
+	python3 -m venv $(VENV)
+
+install: $(VENV)/bin/python
+	$(PIP) install --upgrade pip
+	$(PIP) install -r requirements.txt
+	$(PIP) install -e ".[dev]"
+
+run: install
 	cp -n .env.example .env 2>/dev/null || true
-	alembic upgrade head
-	sanic src.main:create_app --host=0.0.0.0 --port=8000 --dev
+	$(ALEMBIC) upgrade head
+	$(SANIC) src.main:create_app --factory --host=0.0.0.0 --port=8000 --dev
 
-test:
-	pytest -v --cov=src --cov-report=term-missing
+test: install
+	$(PYTEST) -v --cov=src --cov-report=term-missing
 
-lint:
-	ruff check src/ tests/
-	ruff format --check src/ tests/
+lint: install
+	$(RUFF) check src/ tests/
+	$(RUFF) format --check src/ tests/
 
-format:
-	ruff format src/ tests/
+format: install
+	$(RUFF) format src/ tests/
 
 docker-up:
 	docker compose up --build -d
@@ -35,4 +46,5 @@ clean:
 	rm -rf *.egg-info
 	rm -rf .coverage
 	rm -rf htmlcov
+	rm -rf $(VENV)
 	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true

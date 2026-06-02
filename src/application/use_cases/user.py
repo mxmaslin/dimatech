@@ -1,7 +1,7 @@
 from collections.abc import Callable
 
 from src.application.dto import AccountResponse, PaymentResponse, UserResponse
-from src.application.errors import NotFoundError
+from src.application.errors import InternalError, NotFoundError
 from src.domain.interfaces import UnitOfWork
 
 
@@ -15,7 +15,7 @@ class GetUserUseCase:
             if not user:
                 raise NotFoundError("User")
             if user.id is None:
-                raise RuntimeError("GetUserUseCase: user.id is None after fetch")
+                raise InternalError("User id is None after fetch")
             return UserResponse(
                 id=user.id,
                 email=str(user.email),
@@ -30,14 +30,18 @@ class GetUserAccountsUseCase:
     async def execute(self, user_id: int) -> list[AccountResponse]:
         async with self._uow_factory() as uow:
             accounts = await uow.accounts.get_by_user_id(user_id)
-            return [
-                AccountResponse(
-                    id=acc.id,  # type: ignore[arg-type]
-                    user_id=acc.user_id,
-                    balance=acc.balance,
+            result: list[AccountResponse] = []
+            for acc in accounts:
+                if acc.id is None:
+                    raise InternalError("Account id is None after persistence")
+                result.append(
+                    AccountResponse(
+                        id=acc.id,
+                        user_id=acc.user_id,
+                        balance=acc.balance,
+                    )
                 )
-                for acc in accounts
-            ]
+            return result
 
 
 class GetUserPaymentsUseCase:

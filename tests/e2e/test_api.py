@@ -232,3 +232,32 @@ async def test_health_endpoint(test_client):
     _, resp = await test_client.get("/health")
     assert resp.status == 200
     assert resp.json["status"] == "ok"
+
+
+@pytest.mark.asyncio
+async def test_webhook_missing_body_returns_400(test_client):
+    _, response = await test_client.post("/payments/webhook")
+    assert response.status == 400
+    assert response.json["error"] == "validation_error"
+
+
+@pytest.mark.asyncio
+async def test_webhook_invalid_body_returns_422(test_client):
+    _, response = await test_client.post(
+        "/payments/webhook",
+        json={"invalid": "data"},
+    )
+    assert response.status == 400
+
+
+@pytest.mark.asyncio
+async def test_forbidden_response_body(test_client):
+    _, login_resp = await test_client.post(
+        "/auth/login",
+        json={"email": "admin@example.com", "password": "admin123"},
+    )
+    token = login_resp.json["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+    _, resp = await test_client.get("/users/me", headers=headers)
+    assert resp.status == 403
+    assert resp.json["error"] == "forbidden"

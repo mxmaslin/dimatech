@@ -7,6 +7,8 @@ build/
 
 # Environment
 .env
+.venv/
+.venv
 
 # Testing
 test.db

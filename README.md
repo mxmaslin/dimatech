@@ -42,15 +42,18 @@ createdb dimatech
 cp .env.example .env
 # Edit .env if needed (DATABASE_URL, secrets)
 
-# 3. Install dependencies
+# 3. Install dependencies (auto-creates .venv)
 make install
 
-# 4. Run migrations
-alembic upgrade head
+# 4. Activate virtual environment
+source .venv/bin/activate
 
-# 5. Start development server
-make run
+# 5. Run migrations & start dev server (or: make run)
+alembic upgrade head
+sanic src.main:create_app --factory --host=0.0.0.0 --port=8000 --dev
 ```
+
+> All `make` commands (`make test`, `make lint`, etc.) automatically create and use the `.venv` virtual environment. If you prefer to run commands directly, activate the venv first with `source .venv/bin/activate`.
 
 The API will be available at `http://localhost:8000`.
 
@@ -128,25 +131,35 @@ pytest -v --cov=src --cov-report=term-missing --cov-report=html
 ## Project Structure
 
 ```
-src/
-├── domain/            # Business entities (no framework dependencies)
-│   ├── entities.py
-│   ├── value_objects.py
-│   └── interfaces.py
-├── application/       # Use cases & DTOs
-│   ├── dto.py
-│   ├── errors.py
-│   └── use_cases/
-├── infrastructure/    # Database, auth, config
-│   ├── config.py
-│   ├── database/
-│   └── auth/
-├── presentation/      # Sanic routes, middleware, error handlers
-│   ├── routes/
-│   ├── middleware.py
-│   └── errors.py
-├── container.py       # DI container
-└── main.py            # App factory
+├── alembic.ini            # Alembic config (honours $DATABASE_URL)
+├── docker-compose.yml
+├── Dockerfile
+├── Makefile
+├── pyproject.toml
+├── requirements.txt
+├── migrations/
+│   ├── env.py
+│   └── versions/
+└── src/
+    ├── domain/            # Business entities (no framework dependencies)
+    │   ├── entities.py
+    │   ├── value_objects.py
+    │   └── interfaces.py
+    ├── application/       # Use cases & DTOs
+    │   ├── dto.py
+    │   ├── errors.py
+    │   └── use_cases/
+    ├── infrastructure/    # Database, auth, config
+    │   ├── config.py
+    │   ├── database/
+    │   └── auth/
+    ├── presentation/      # Sanic routes, middleware, error handlers
+    │   ├── routes/
+    │   ├── middleware.py
+    │   ├── errors.py
+    │   └── utils.py
+    ├── container.py       # DI container
+    └── main.py            # App factory
 ```
 
 ## Available Make Commands

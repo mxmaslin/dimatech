@@ -3,8 +3,8 @@ from datetime import datetime
 from decimal import Decimal
 
 import bcrypt
+import sqlalchemy as sa
 from alembic import op
-from sqlalchemy import text
 
 revision = "001_initial"
 down_revision = None
@@ -15,73 +15,73 @@ depends_on = None
 def upgrade() -> None:
     op.create_table(
         "users",
-        op.Column("id", op.Integer(), primary_key=True, autoincrement=True),
-        op.Column("email", op.String(255), unique=True, nullable=False),
-        op.Column("password_hash", op.String(255), nullable=False),
-        op.Column("full_name", op.String(255), nullable=False),
-        op.Column("is_active", op.Boolean(), server_default=text("true")),
-        op.Column(
+        sa.Column("id", sa.Integer(), primary_key=True, autoincrement=True),
+        sa.Column("email", sa.String(255), unique=True, nullable=False),
+        sa.Column("password_hash", sa.String(255), nullable=False),
+        sa.Column("full_name", sa.String(255), nullable=False),
+        sa.Column("is_active", sa.Boolean(), server_default=sa.text("true")),
+        sa.Column(
             "created_at",
-            op.DateTime(timezone=True),
-            server_default=text("now()"),
+            sa.DateTime(timezone=True),
+            server_default=sa.text("now()"),
         ),
     )
 
     op.create_table(
         "admins",
-        op.Column("id", op.Integer(), primary_key=True, autoincrement=True),
-        op.Column("email", op.String(255), unique=True, nullable=False),
-        op.Column("password_hash", op.String(255), nullable=False),
-        op.Column("full_name", op.String(255), nullable=False),
-        op.Column(
+        sa.Column("id", sa.Integer(), primary_key=True, autoincrement=True),
+        sa.Column("email", sa.String(255), unique=True, nullable=False),
+        sa.Column("password_hash", sa.String(255), nullable=False),
+        sa.Column("full_name", sa.String(255), nullable=False),
+        sa.Column(
             "created_at",
-            op.DateTime(timezone=True),
-            server_default=text("now()"),
+            sa.DateTime(timezone=True),
+            server_default=sa.text("now()"),
         ),
     )
 
     op.create_table(
         "accounts",
-        op.Column("id", op.Integer(), primary_key=True, autoincrement=True),
-        op.Column(
+        sa.Column("id", sa.Integer(), primary_key=True, autoincrement=True),
+        sa.Column(
             "user_id",
-            op.Integer(),
-            op.ForeignKey("users.id", ondelete="CASCADE"),
+            sa.Integer(),
+            sa.ForeignKey("users.id", ondelete="CASCADE"),
             nullable=False,
         ),
-        op.Column(
+        sa.Column(
             "balance",
-            op.DECIMAL(12, 2),
+            sa.DECIMAL(12, 2),
             nullable=False,
-            server_default=text("0.00"),
+            server_default=sa.text("0.00"),
         ),
-        op.Column(
+        sa.Column(
             "created_at",
-            op.DateTime(timezone=True),
-            server_default=text("now()"),
+            sa.DateTime(timezone=True),
+            server_default=sa.text("now()"),
         ),
     )
 
     op.create_table(
         "payments",
-        op.Column("transaction_id", op.String(255), primary_key=True),
-        op.Column(
+        sa.Column("transaction_id", sa.String(255), primary_key=True),
+        sa.Column(
             "user_id",
-            op.Integer(),
-            op.ForeignKey("users.id", ondelete="CASCADE"),
+            sa.Integer(),
+            sa.ForeignKey("users.id", ondelete="CASCADE"),
             nullable=False,
         ),
-        op.Column(
+        sa.Column(
             "account_id",
-            op.Integer(),
-            op.ForeignKey("accounts.id", ondelete="CASCADE"),
+            sa.Integer(),
+            sa.ForeignKey("accounts.id", ondelete="CASCADE"),
             nullable=False,
         ),
-        op.Column("amount", op.DECIMAL(12, 2), nullable=False),
-        op.Column(
+        sa.Column("amount", sa.DECIMAL(12, 2), nullable=False),
+        sa.Column(
             "created_at",
-            op.DateTime(timezone=True),
-            server_default=text("now()"),
+            sa.DateTime(timezone=True),
+            server_default=sa.text("now()"),
         ),
     )
 
@@ -91,7 +91,7 @@ def upgrade() -> None:
     admin_password = bcrypt.hashpw(b"admin123", bcrypt.gensalt()).decode()
 
     conn.execute(
-        text(
+        sa.text(
             "INSERT INTO users (email, password_hash, full_name) "
             "VALUES (:email, :pwd, :name)"
         ),
@@ -99,7 +99,7 @@ def upgrade() -> None:
     )
 
     conn.execute(
-        text(
+        sa.text(
             "INSERT INTO admins (email, password_hash, full_name) "
             "VALUES (:email, :pwd, :name)"
         ),
@@ -111,7 +111,7 @@ def upgrade() -> None:
     )
 
     conn.execute(
-        text(
+        sa.text(
             "INSERT INTO accounts (user_id, balance) "
             "VALUES (:uid, :bal)"
         ),

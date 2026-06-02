@@ -11,7 +11,7 @@ from src.presentation.routes.user import setup_user_routes
 
 
 def create_app(config: AppConfig | None = None) -> Sanic:
-    if config is None:
+    if config is None or not isinstance(config, AppConfig):
         config = AppConfig()
 
     app = Sanic("DimaTech")

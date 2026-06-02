@@ -24,8 +24,12 @@ class AuthMiddleware:
         payload = self._jwt_service.decode_token(token)
         if payload is None:
             raise AuthenticationError("Invalid or expired token")
-        request.ctx.user_id = payload.get("user_id")
-        request.ctx.role = payload.get("role")
+        user_id = payload.get("user_id")
+        role = payload.get("role")
+        if user_id is None or role is None:
+            raise AuthenticationError("Invalid token payload")
+        request.ctx.user_id = user_id
+        request.ctx.role = role
         return payload
 
     def require_user(self, request: Request) -> dict:
