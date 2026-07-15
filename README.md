@@ -1,16 +1,43 @@
-# DimaTech — Тестовое задание REST API
+# DimaTech — REST API финтех-сервиса
 
-Асинхронное REST API на **Sanic**, **SQLAlchemy 2.0** (async), **PostgreSQL** в парадигме Clean Architecture.
+## О проекте
 
-## Стек
+Асинхронный бэкенд учебного финтех-приложения: пользователи с личными счетами, администраторы управляют аккаунтами, внешний платёжный провайдер шлёт подписанные webhook'и о пополнении. Реализовано как **тестовое задание** с акцентом на Clean Architecture, безопасность webhook'ов и production-паттерны (health, rate limit, CORS).
 
-- **Фреймворк:** Sanic (async)
-- **ORM:** SQLAlchemy 2.0 (async)
-- **База данных:** PostgreSQL 16
-- **Миграции:** Alembic
-- **Аутентификация:** JWT (HS256) + bcrypt
-- **Валидация:** Pydantic v2
-- **Тесты:** pytest + pytest-asyncio
+## Какую задачу решает
+
+Моделирует типичный **B2C fintech backend**:
+
+- **JWT-аутентификация** — роли `user` / `admin`, разделение эндпоинтов;
+- **Личный кабинет** — профиль, список счетов и история платежей пользователя;
+- **Админка** — CRUD пользователей, просмотр счетов;
+- **Webhook платежей** — HMAC-подобная SHA256-подпись, идемпотентность по `transaction_id`, атомарное зачисление на баланс;
+- **Защита webhook'а** — rate limit 10 req/min на IP, верификация подписи до записи в БД.
+
+Use case'ы не зависят от Sanic/SQLAlchemy — domain и application тестируются отдельно от HTTP-слоя.
+
+## Как устроено
+
+```
+HTTP (Sanic routes + middleware)
+    → DI Container
+    → Application use cases (auth, users, payments/webhook)
+    → Domain entities + ports (UnitOfWork, SecretKeyProvider)
+    → Infrastructure (SQLAlchemy async repos, JWT, bcrypt, config)
+```
+
+Слои: `domain/` (сущности без фреймворков) → `application/` (DTO, use cases) → `infrastructure/` (БД, auth) → `presentation/` (роуты, CORS, rate limiter, error handlers). Webhook: `ProcessPaymentWebhookUseCase` проверяет подпись, создаёт платёж идемпотентно и увеличивает баланс счёта в одной транзакции.
+
+## Стек и почему
+
+| Технология | Зачем |
+|------------|-------|
+| **Sanic** | Нативный async HTTP — подходит под I/O-bound webhook'и и параллельные запросы к PostgreSQL |
+| **SQLAlchemy 2.0 async** | Единый стиль с production Django/FastAPI-проектами; явные репозитории за портами UoW |
+| **PostgreSQL 16** | Транзакции для webhook + баланс; миграции Alembic |
+| **JWT (HS256) + bcrypt** | Stateless auth для API; пароли не в открытом виде |
+| **Pydantic v2** | Валидация DTO на границе application/presentation |
+| **pytest-asyncio** | Async integration-тесты use case'ов и HTTP-слоя |
 
 ## Быстрый старт
 
