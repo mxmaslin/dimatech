@@ -150,7 +150,7 @@ class SqlAlchemyAccountRepository:
         model = result.scalar_one_or_none()
         # Account must exist — it was verified/created earlier in the same transaction
         if model is None:
-                raise RuntimeError(f"Account {account_id} not found")
+            raise RuntimeError(f"Account {account_id} not found")
         await self._session.flush()
         return self._to_domain(model)
 

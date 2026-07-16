@@ -5,6 +5,7 @@ from src.application.dto import PaymentWebhookRequest
 from src.application.errors import ValidationError
 from src.application.use_cases.payment import ProcessPaymentWebhookUseCase
 
+
 def setup_payment_routes(
     bp: Blueprint,
     process_payment_use_case: ProcessPaymentWebhookUseCase,

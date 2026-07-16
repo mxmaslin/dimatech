@@ -1,15 +1,14 @@
 import time
 from collections import defaultdict
-from collections.abc import Callable
 from typing import Optional
 
-from sanic import Sanic, response
+from sanic import Sanic
 from sanic.request import Request
 
 from src.application.errors import ApplicationError
 
 
-class RateLimitExceeded(ApplicationError):
+class RateLimitExceededError(ApplicationError):
     def __init__(self) -> None:
         super().__init__("Rate limit exceeded. Try again later.", status_code=429)
 
@@ -48,7 +47,7 @@ class SlidingWindowRateLimiter:
             timestamps.pop(0)
 
         if len(timestamps) >= self._max_requests:
-            raise RateLimitExceeded()
+            raise RateLimitExceededError()
 
         timestamps.append(now)
 

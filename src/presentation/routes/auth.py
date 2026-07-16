@@ -6,6 +6,7 @@ from src.application.use_cases.auth import GetAdminUseCase, LoginUseCase
 from src.presentation.middleware import AuthMiddleware
 from src.presentation.utils import require_json
 
+
 def setup_auth_routes(
     bp: Blueprint,
     login_use_case: LoginUseCase,

@@ -84,7 +84,10 @@ def create_app(config: AppConfig | None = None) -> Sanic:
 
         status_code = 200 if db_ok else 503
         return response.json(
-            {"status": "ok" if db_ok else "degraded", "database": "connected" if db_ok else "disconnected"},
+            {
+                "status": "ok" if db_ok else "degraded",
+                "database": "connected" if db_ok else "disconnected",
+            },
             status=status_code,
         )
 

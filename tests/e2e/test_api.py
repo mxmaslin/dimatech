@@ -265,6 +265,7 @@ async def test_forbidden_response_body(test_client):
 
 # --- Health check tests ---
 
+
 @pytest.mark.asyncio
 async def test_health_endpoint_with_db_check(test_client):
     _, resp = await test_client.get("/health")
@@ -291,6 +292,7 @@ async def test_health_ready_endpoint(test_client):
 
 
 # --- CORS tests ---
+
 
 @pytest.mark.asyncio
 async def test_cors_headers_on_get(test_client):
@@ -324,6 +326,7 @@ async def test_cors_preflight(test_client):
 
 # --- Rate limiter tests ---
 
+
 @pytest.mark.asyncio
 async def test_rate_limiter_allows_normal_requests(test_client):
     """Should allow requests under the limit."""
@@ -343,8 +346,9 @@ async def test_rate_limiter_block_excess(test_client):
     # Since we can't easily patch the middleware from outside, this tests
     # that the rate limiter class itself properly blocks.
 
-    from src.presentation.rate_limiter import SlidingWindowRateLimiter
     from unittest.mock import MagicMock
+
+    from src.presentation.rate_limiter import SlidingWindowRateLimiter
 
     limiter = SlidingWindowRateLimiter(max_requests=2, window_seconds=60)
     request = MagicMock()
@@ -359,6 +363,7 @@ async def test_rate_limiter_block_excess(test_client):
 
     # Third should fail
     from src.application.errors import ApplicationError
+
     with pytest.raises(ApplicationError) as exc_info:
         limiter.check(request)
     assert exc_info.value.status_code == 429
@@ -367,9 +372,10 @@ async def test_rate_limiter_block_excess(test_client):
 @pytest.mark.asyncio
 async def test_rate_limiter_window_expiry(test_client):
     """Requests outside the window should be allowed again."""
-    from src.presentation.rate_limiter import SlidingWindowRateLimiter
-    from unittest.mock import MagicMock
     import time
+    from unittest.mock import MagicMock
+
+    from src.presentation.rate_limiter import SlidingWindowRateLimiter
 
     limiter = SlidingWindowRateLimiter(max_requests=1, window_seconds=0.1)
     request = MagicMock()
@@ -383,6 +389,7 @@ async def test_rate_limiter_window_expiry(test_client):
 
     # Second fails
     from src.application.errors import ApplicationError
+
     with pytest.raises(ApplicationError):
         limiter.check(request)
 
@@ -396,8 +403,9 @@ async def test_rate_limiter_window_expiry(test_client):
 @pytest.mark.asyncio
 async def test_rate_limiter_different_ips(test_client):
     """Different IPs should have independent counters."""
-    from src.presentation.rate_limiter import SlidingWindowRateLimiter
     from unittest.mock import MagicMock
+
+    from src.presentation.rate_limiter import SlidingWindowRateLimiter
 
     limiter = SlidingWindowRateLimiter(max_requests=1, window_seconds=60)
     ip1_req = MagicMock()
@@ -415,6 +423,7 @@ async def test_rate_limiter_different_ips(test_client):
     limiter.check(ip1_req)
 
     from src.application.errors import ApplicationError
+
     with pytest.raises(ApplicationError):
         limiter.check(ip1_req)
 

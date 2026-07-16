@@ -23,9 +23,5 @@ def setup_cors(app: Sanic) -> None:
     @app.middleware("response")
     async def add_cors_headers(_request: Request, resp):
         resp.headers.setdefault("Access-Control-Allow-Origin", "*")
-        resp.headers.setdefault(
-            "Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS"
-        )
-        resp.headers.setdefault(
-            "Access-Control-Allow-Headers", "Content-Type, Authorization"
-        )
+        resp.headers.setdefault("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+        resp.headers.setdefault("Access-Control-Allow-Headers", "Content-Type, Authorization")
